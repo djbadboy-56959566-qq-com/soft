@@ -1,0 +1,32 @@
+name: Build fnos
+
+on:
+  push:
+    paths:
+      - 'fnos/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fnos/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: fnos
+        run: pnpm install
+      - name: Build
+        working-directory: fnos
+        run: pnpm build:misans-only
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: fnos-dist
+          path: fnos/dist
