@@ -21,7 +21,7 @@ jobs:
           cache-dependency-path: fnos/pnpm-lock.yaml
       - name: Install dependencies
         working-directory: fnos
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
       - name: Build
         working-directory: fnos
         run: pnpm build:misans-only
