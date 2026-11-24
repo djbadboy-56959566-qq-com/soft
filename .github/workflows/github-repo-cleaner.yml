@@ -11,8 +11,13 @@
 #  4. Release 里放压缩包 github-repo-cleaner-windows.zip（不是单个 exe），
 #     下载后解压就能用；Actions 里不再上传附件，打包文件只放发行版，
 #     代码改了旧包就过时了，不再显示和上传。
-#  5. 只保留最新 2 个发行版：每次发完新版，自动删掉第 3 个及更旧的发行版
-#     （连 tag 一起删），超过 2 个就不要了。
+#  5. 每个程序各保留最新 2 个版本：按发行版里的附件文件名分组，
+#     DjMihomo.fpk 算 DjMihomo，github-repo-cleaner-windows.zip 算
+#     github-repo-cleaner，其他附件按自己的文件名各成一组；每组只留
+#     最新 2 个，第 3 个及更旧的删掉（连 tag 一起删）。
+#     注意：不是全仓库总共只留 2 个——DjMihomo 留 2 个，cleaner 也留
+#     2 个，互不挤占。一个发行版里同时挂了两个程序的附件时，它在两
+#     组里都算数，只有在它所属的每一组都掉出前 2 名时才删。
 # 用法：把这个文件覆盖到仓库的 .github/workflows/github-repo-cleaner.yml，
 # 同时把 clean_repos.py 传到 gsoft/clean_repos.py、icon.ico 传到 gsoft/icon.ico，
 # 然后去 Actions 页 → Build github-repo-cleaner.exe → Run workflow 手动跑一次，
@@ -67,22 +72,72 @@ jobs:
           generate_release_notes: true
           make_latest: true
           files: dist/github-repo-cleaner-windows.zip
-      - name: 只保留最新 2 个发行版（多的删掉）
-        shell: pwsh
+      - name: 每个程序各保留最新 2 个版本（多的删掉）
+        # 按附件文件名分组，不按全仓库总数删。Windows runner 上已有
+        # Python（前面 setup-python 装的 3.12），用 shell: python 跑，
+        # 这样本地也能用假 gh 数据实测同一段逻辑。
+        shell: python
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $json = gh release list --limit 100 --json tagName,createdAt
-          if (-not $json) { echo "没有发行版，不用删"; exit 0 }
-          $releases = $json | ConvertFrom-Json
-          $sorted = @($releases | Sort-Object createdAt -Descending)
-          echo "当前发行版共 $($sorted.Count) 个，只保留最新 2 个"
-          if ($sorted.Count -gt 2) {
-            $toDelete = $sorted | Select-Object -Skip 2
-            foreach ($r in $toDelete) {
-              echo "删除旧发行版：$($r.tagName)"
-              gh release delete $r.tagName --yes --cleanup-tag
-            }
-          } else {
-            echo "不用删"
-          }
+          import json, subprocess, sys
+
+          KEEP = 2
+
+          def gh(*args):
+              r = subprocess.run(["gh"] + list(args), capture_output=True, text=True)
+              return r
+
+          def app_of(asset_name):
+              n = asset_name.lower()
+              if n.startswith("djmihomo"):
+                  return "DjMihomo"
+              if "github-repo-cleaner" in n:
+                  return "github-repo-cleaner"
+              return n  # 其他程序：按自己的附件文件名各成一组
+
+          r = gh("release", "list", "--limit", "100", "--json", "tagName,createdAt")
+          if r.returncode != 0:
+              print("列发行版失败：", r.stderr.strip())
+              sys.exit(1)
+          releases = json.loads(r.stdout or "[]")
+          if not releases:
+              print("没有发行版，不用删")
+              sys.exit(0)
+
+          # 每个发行版属于哪些程序组（按它挂的附件算）
+          groups = {}   # app -> [(createdAt, tag)]
+          no_asset = []
+          for rel in releases:
+              tag = rel["tagName"]
+              v = gh("release", "view", tag, "--json", "assets")
+              assets = []
+              if v.returncode == 0:
+                  assets = [a.get("name", "") for a in json.loads(v.stdout or "{}").get("assets", [])]
+              apps = sorted({app_of(a) for a in assets if a})
+              if not apps:
+                  no_asset.append(tag)
+                  continue
+              for app in apps:
+                  groups.setdefault(app, []).append((rel["createdAt"], tag))
+
+          keep = set()
+          for app in sorted(groups):
+              items = sorted(groups[app], reverse=True)  # 最新在前
+              print(f"[{app}] 共 {len(items)} 个，保留最新 {KEEP} 个：{[t for _, t in items[:KEEP]]}")
+              keep.update(t for _, t in items[:KEEP])
+
+          if no_asset:
+              print("无附件的发行版不自动删（只挂源码的）：", no_asset)
+              keep.update(no_asset)
+
+          to_delete = [rel["tagName"] for rel in releases if rel["tagName"] not in keep]
+          if not to_delete:
+              print("不用删")
+              sys.exit(0)
+          for tag in to_delete:
+              print(f"删除旧发行版：{tag}")
+              d = gh("release", "delete", tag, "--yes", "--cleanup-tag")
+              if d.returncode != 0:
+                  print(f"  [失败] {tag}：{d.stderr.strip()}")
+          print(f"删完。保留：{sorted(keep)}")
