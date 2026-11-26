@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DjMihomo 控制台</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('djmihomo-theme')||'green')}catch(e){}</script>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1>DjMihomo 控制台</h1>
+    <span id="msg"></span>
+    <div class="theme-switch" id="theme-switch">
+      <button data-theme-btn="green" class="theme-dot" style="--dot:#10b981" title="绿色"></button>
+      <button data-theme-btn="white" class="theme-dot" style="--dot:#e5e7eb" title="白色"></button>
+      <button data-theme-btn="dark" class="theme-dot" style="--dot:#1e293b" title="暗色"></button>
+      <button data-theme-btn="red" class="theme-dot" style="--dot:#dc2626" title="红色"></button>
+    </div>
+  </div>
+</header>
+<nav id="tabs">
+  <div class="tabs-inner">
+    <button data-tab="app" class="active">应用配置</button>
+    <button data-tab="profiles">配置文件</button>
+    <button data-tab="mixin">混入配置</button>
+    <button data-tab="proxy">代理</button>
+    <button data-tab="editor">编辑器</button>
+    <button data-tab="live">实时面板</button>
+    <button data-tab="logs">日志</button>
+  </div>
+</nav>
+<main>
+  <section id="tab-app" class="tab active">
+    <div class="cols">
+    <div class="card">
+      <h2>运行状态</h2>
+      <dl class="kv">
+        <dt>应用版本</dt><dd><span id="st-appver">—</span></dd>
+        <dt>核心版本</dt><dd><span id="st-corever">—</span></dd>
+        <dt>核心状态</dt><dd><b id="st-running">—</b></dd>
+        <dt>进程 PID</dt><dd><span id="st-pid">—</span></dd>
+        <dt>混合端口</dt><dd><span id="st-mixed">—</span></dd>
+        <dt>控制端口</dt><dd><span id="st-ctl">—</span></dd>
+        <dt>模式</dt><dd><span id="st-mode">—</span></dd>
+        <dt>节点数量</dt><dd><span id="st-proxies">—</span></dd>
+      </dl>
+      <div class="row">
+        <button id="btn-reload">重载服务</button>
+        <button id="btn-restart">重启服务</button>
+        <button id="btn-update-dash">更新面板</button>
+        <button id="btn-open-dash">打开面板</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>连通性测试</h2>
+      <p class="note">国内网站直连、国外网站走代理，测通不通和延迟；进页面或核心启动后自动测一次。</p>
+      <div class="row" style="flex-wrap:nowrap">
+        <button id="btn-conn-test">开始测试</button>
+        <span class="note" id="conn-note"><span id="conn-note-inner"></span></span>
+      </div>
+      <div id="conn-list">
+        <div class="conn-row"><span class="conn-icon" style="background:#2932e1">百</span><span class="conn-name">百度</span><span class="conn-via">直连</span><span class="conn-result">—</span></div>
+        <div class="conn-row"><span class="conn-icon" style="background:#ff6a00">阿</span><span class="conn-name">阿里云</span><span class="conn-via">直连</span><span class="conn-result">—</span></div>
+        <div class="conn-row"><span class="conn-icon" style="background:#4285f4">G</span><span class="conn-name">Google</span><span class="conn-via">代理</span><span class="conn-result">—</span></div>
+        <div class="conn-row"><span class="conn-icon" style="background:#ff0000">Y</span><span class="conn-name">YouTube</span><span class="conn-via">代理</span><span class="conn-result">—</span></div>
+        <div class="conn-row"><span class="conn-icon" style="background:#24292f">G</span><span class="conn-name">GitHub</span><span class="conn-via">代理</span><span class="conn-result">—</span></div>
+      </div>
+    </div>
+    </div>
+    <div class="card">
+      <h2>应用配置</h2>
+      <form id="app-form">
+        <div class="field">
+          <label for="app-enabled">启用服务</label>
+          <span class="check"><input id="app-enabled" type="checkbox"> <span class="note">勾选后保存即启动 Mihomo，取消勾选后保存即停止</span></span>
+        </div>
+        <div class="field">
+          <label for="app-profile">选择配置文件</label>
+          <select id="app-profile"></select>
+        </div>
+        <div class="field">
+          <label for="app-start-delay">启动延迟（秒）</label>
+          <input id="app-start-delay" type="number" min="0" max="3600">
+        </div>
+        <div class="field">
+          <label for="app-sched-restart">定时重启</label>
+          <span class="check"><input id="app-sched-restart" type="checkbox"></span>
+        </div>
+        <div class="field">
+          <label for="app-sched-cron">定时重启 Cron</label>
+          <input id="app-sched-cron" type="text" placeholder="0 3 * * *">
+          <span class="hint">分 时 日 月 周，例如 0 3 * * * 表示每天 3 点</span>
+        </div>
+        <div class="field">
+          <label for="app-core-only">仅核心</label>
+          <span class="check"><input id="app-core-only" type="checkbox"> <span class="note">不做系统代理/转发配置</span></span>
+        </div>
+        <div class="row">
+          <button type="submit">保存应用配置</button>
+        </div>
+      </form>
+      <p class="note">保存后如更换了配置文件，会重新生成运行配置并重启 Mihomo。</p>
+      <p class="copyright">版权注册引用 OpenWrt-nikki 二打包，如有侵权请邮件通知我！</p>
+    </div>
+  </section>
+
+  <section id="tab-profiles" class="tab">
+    <div class="card">
+      <h2>配置文件</h2>
+      <table id="profile-table">
+        <thead>
+          <tr><th>名称</th><th>类型</th><th>更新时间</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <form id="profile-upload-form" class="row">
+        <input id="profile-file" type="file" accept=".yaml,.yml">
+        <button type="submit">上传 YAML 文件</button>
+        <span class="note">上传的 YAML 文件会保存为同名配置文件</span>
+      </form>
+      <p class="note">新建的配置文件使用默认模板，可在“编辑器”里修改。订阅的配置文件由订阅更新生成。</p>
+    </div>
+    <div class="card">
+      <h2>订阅管理</h2>
+      <form id="sub-form">
+        <div class="row">
+          <input id="sub-name" placeholder="名称，例如 mia公益" required>
+          <input id="sub-url" placeholder="订阅链接 https://..." required style="flex:2">
+          <input id="sub-ua" placeholder="User-Agent（默认 clash）">
+        </div>
+        <div class="row">
+          <label class="note" for="sub-interval">自动更新间隔（小时，0 = 不自动更新，最少 0.5 小时 = 30 分钟）</label>
+          <input id="sub-interval" type="number" min="0" max="720" step="0.5" value="0" style="width:90px">
+          <label class="check"><input id="sub-proxy" type="checkbox"> 通过 VPN 更新订阅</label>
+          <button type="submit" id="btn-sub-save">添加 / 更新</button>
+          <button type="button" id="btn-sub-cancel" class="secondary" style="display:none">取消编辑</button>
+        </div>
+      </form>
+      <div class="row">
+        <button id="btn-update-all">更新全部</button>
+        <button id="btn-refresh-subs">刷新列表</button>
+      </div>
+      <table id="sub-table">
+        <thead>
+          <tr><th>名称</th><th>链接</th><th>User-Agent</th><th>间隔（小时）</th><th>VPN</th><th>更新时间</th><th>操作</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="note">订阅内容为 YAML 时直接保存为配置文件；为节点链接时自动转为最小配置文件（节点 + PROXY 组 + MATCH 规则）。更新后自动重新生成运行配置并重启。</p>
+    </div>
+  </section>
+
+  <section id="tab-mixin" class="tab">
+    <div class="card">
+      <h2>混入配置</h2>
+      <p class="note">这里的设置会覆盖配置文件里的对应项，留空表示不改动。</p>
+      <form id="mixin-form">
+        <h3>通用</h3>
+        <div class="field">
+          <label for="mx-log-level">日志级别（log-level）</label>
+          <select id="mx-log-level">
+            <option value="">未改动</option>
+            <option value="silent">silent</option>
+            <option value="error">error</option>
+            <option value="warning">warning</option>
+            <option value="info">info</option>
+            <option value="debug">debug</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-mode">运行模式（mode）</label>
+          <select id="mx-mode">
+            <option value="">未改动</option>
+            <option value="rule">rule（规则）</option>
+            <option value="global">global（全局）</option>
+            <option value="direct">direct（直连）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-ipv6">IPv6</label>
+          <select id="mx-ipv6">
+            <option value="">未改动</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-allow-lan">允许局域网连接（allow-lan）</label>
+          <select id="mx-allow-lan">
+            <option value="">未改动</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+        <h3>入站端口</h3>
+        <div class="field">
+          <label for="mx-mixed-port">混合端口（mixed-port）</label>
+          <input id="mx-mixed-port" type="number" min="1" max="65535">
+        </div>
+        <div class="field">
+          <label for="mx-http-port">HTTP 端口（port）</label>
+          <input id="mx-http-port" type="number" min="1" max="65535">
+        </div>
+        <div class="field">
+          <label for="mx-socks-port">SOCKS 端口（socks-port）</label>
+          <input id="mx-socks-port" type="number" min="1" max="65535">
+        </div>
+        <div class="field">
+          <label for="mx-redir-port">重定向端口（redir-port）</label>
+          <input id="mx-redir-port" type="number" min="1" max="65535">
+        </div>
+        <div class="field">
+          <label for="mx-tproxy-port">TPROXY 端口（tproxy-port）</label>
+          <input id="mx-tproxy-port" type="number" min="1" max="65535">
+        </div>
+        <h3>外部控制</h3>
+        <div class="field">
+          <label for="mx-api-listen">API 监听（external-controller）</label>
+          <input id="mx-api-listen" type="text" placeholder="0.0.0.0:9090">
+        </div>
+        <div class="field">
+          <label for="mx-selection-cache">保存代理选择（selection-cache）</label>
+          <select id="mx-selection-cache">
+            <option value="">未改动</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+        <h3>DNS</h3>
+        <div class="field">
+          <label for="mx-dns-enabled">启用 DNS</label>
+          <select id="mx-dns-enabled">
+            <option value="">未改动</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-dns-listen">DNS 监听（listen）</label>
+          <input id="mx-dns-listen" type="text" placeholder="[::]:1053">
+        </div>
+        <div class="field">
+          <label for="mx-dns-mode">DNS 模式（enhanced-mode）</label>
+          <select id="mx-dns-mode">
+            <option value="">未改动</option>
+            <option value="fake-ip">fake-ip</option>
+            <option value="redir-host">redir-host</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-fake-ip-range">Fake-IP 段（fake-ip-range）</label>
+          <input id="mx-fake-ip-range" type="text" placeholder="198.18.0.1/16">
+        </div>
+        <div class="field">
+          <label for="mx-nameserver">DNS 服务器（nameserver）</label>
+          <textarea id="mx-nameserver" rows="3" spellcheck="false" placeholder="每行一个，例如 https://223.5.5.5/dns-query"></textarea>
+        </div>
+        <div class="field">
+          <label for="mx-default-nameserver">默认 DNS 服务器</label>
+          <textarea id="mx-default-nameserver" rows="2" spellcheck="false" placeholder="每行一个，例如 223.5.5.5"></textarea>
+        </div>
+        <h3>TUN</h3>
+        <div class="field">
+          <label for="mx-tun-enabled">启用 TUN</label>
+          <select id="mx-tun-enabled">
+            <option value="">未改动</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-tun-device">TUN 设备名（device）</label>
+          <input id="mx-tun-device" type="text" placeholder="tun0">
+        </div>
+        <div class="field">
+          <label for="mx-tun-stack">TUN 协议栈（stack）</label>
+          <select id="mx-tun-stack">
+            <option value="">未改动</option>
+            <option value="system">system</option>
+            <option value="gvisor">gvisor</option>
+            <option value="mixed">mixed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mx-tun-mtu">TUN MTU</label>
+          <input id="mx-tun-mtu" type="number" min="1" max="9000">
+        </div>
+        <div class="row">
+          <button type="submit">保存混入配置</button>
+        </div>
+      </form>
+      <p class="note">保存后会自动重新生成运行配置并重启 Mihomo。</p>
+    </div>
+    <div class="card">
+      <h2>混入文件 mixin.yaml</h2>
+      <p class="note">这里可以自由写任何 Mihomo 配置项。优先级：混入配置表单 &gt; mixin.yaml &gt; 配置文件（表单里已设置的项，mixin.yaml 里同名项会被忽略）。</p>
+      <textarea id="mixin-file-text" rows="12" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="btn-mixin-file-save">保存 mixin.yaml</button>
+        <button id="btn-mixin-file-reload">重新加载</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-proxy" class="tab">
+    <div class="card">
+      <h2>运行模式</h2>
+      <p>当前模式：<b id="mode-now">—</b></p>
+      <div class="row" id="mode-btns">
+        <button data-mode="rule">规则模式</button>
+        <button data-mode="global">全局模式</button>
+        <button data-mode="direct">直连模式</button>
+      </div>
+      <dl class="kv">
+        <dt>规则模式</dt><dd>按规则分流：命中规则的走代理，其余按规则直连或拒绝</dd>
+        <dt>全局模式</dt><dd>所有流量都走 GLOBAL 组选定的代理节点</dd>
+        <dt>直连模式</dt><dd>所有流量直连，不走任何代理</dd>
+      </dl>
+      <p class="note">切换后立即生效，并会保存到混入配置，重启后保持。</p>
+    </div>
+    <div class="card">
+      <h2>代理组</h2>
+      <p class="note">先选一个组，再点节点切换。节点太多时用搜索框筛选；更多操作请用下方的实时面板（AnGe-ClashBoard 自带搜索和分组）。Mihomo 未运行时这里是空的。</p>
+      <div class="row">
+        <select id="proxy-group-select" style="min-width:180px"></select>
+        <input id="proxy-node-filter" type="text" placeholder="搜索节点…" style="flex:1">
+        <button id="btn-proxy-delay">测速</button>
+        <button id="btn-proxy-refresh">刷新代理组</button>
+      </div>
+      <div id="proxy-groups"></div>
+    </div>
+  </section>
+
+  <section id="tab-live" class="tab">
+    <div class="card live-card">
+      <div class="card-head">
+        <h2>实时面板</h2>
+        <button id="btn-restore-ange">恢复 AnGe 面板</button>
+      </div>
+      <iframe id="live-frame" title="实时面板"></iframe>
+      <p class="note">实时面板为 AnGe-ClashBoard，由 Mihomo 自带 external-ui 提供，需核心运行中才能打开；若显示 404，重启一次服务即可自动修复面板文件。点「更新面板」可换成官方 Zashboard 备用。</p>
+    </div>
+  </section>
+
+  <section id="tab-editor" class="tab">
+    <div class="card">
+      <h2>编辑器</h2>
+      <div class="field">
+        <label for="ed-profile">选择配置文件</label>
+        <select id="ed-profile"></select>
+      </div>
+      <p>当前编辑：<b id="ed-ref">—</b></p>
+      <textarea id="ed-text" rows="25" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="btn-ed-save">保存配置</button>
+        <button id="btn-ed-reload">重新加载</button>
+      </div>
+      <p class="note">保存后会重新生成运行配置并重启 Mihomo。</p>
+    </div>
+  </section>
+
+  <section id="tab-logs" class="tab">
+    <div class="card">
+      <h2>日志</h2>
+      <div class="row">
+        <button id="btn-log-app" class="active">应用日志</button>
+        <button id="btn-log-core">核心日志</button>
+        <button id="btn-log-refresh">刷新</button>
+        <button id="btn-log-copy">复制日志</button>
+        <button id="btn-log-clear">清空日志</button>
+        <span class="note">打开本页时每 2 秒自动刷新</span>
+      </div>
+      <pre id="log-pre">加载中……</pre>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

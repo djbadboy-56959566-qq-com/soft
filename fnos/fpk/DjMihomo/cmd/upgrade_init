@@ -1,0 +1,43 @@
+#!/bin/bash
+# NOTE: do NOT copy anything from ${TRIM_APPDEST} here unconditionally.
+# During an upgrade the app files from app.tgz (dashboard) are not yet in
+# TRIM_APPDEST when this runs — cp fails and FnOS aborts the whole install
+# with INSTALL_INIT_DATA_SHARE_EXCEPTION (and an unguarded rm first deletes
+# the working panel). The console restores the panel on startup
+# (ensureDashboard compares .djversion and recopies the bundled AnGe).
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+# Overwrite install: stop any previous running instance first, so the old
+# console/core cannot keep holding 7890/9090/9091 or survive as an orphan
+# (pid files may be stale or gone). Match by binary path, TERM then KILL.
+for bin in djconsole mihomo; do
+    pkill -TERM -f "DjMihomo/bin/${bin}" 2>/dev/null || true
+done
+sleep 2
+for bin in djconsole mihomo; do
+    pkill -KILL -f "DjMihomo/bin/${bin}" 2>/dev/null || true
+done
+mkdir -p "${DATA_DIR}/ui"
+# Bundled official geodata (see install_init): install if missing so existing
+# installs also get them on upgrade. Never overwrite an existing file.
+# Guarded on the source existing, so a missing app.tgz never fails the install.
+for f in GeoSite.dat GeoIP.dat Country.mmdb; do
+    if [ ! -f "${DATA_DIR}/$f" ] && [ -f "${TRIM_APPDEST}/geodata/$f" ]; then
+        cp "${TRIM_APPDEST}/geodata/$f" "${DATA_DIR}/$f"
+    fi
+done
+ln -sf GeoSite.dat "${DATA_DIR}/geosite.dat"
+ln -sf GeoIP.dat "${DATA_DIR}/geoip.dat"
+ln -sf Country.mmdb "${DATA_DIR}/country.mmdb"
+# 1.2.49 起以包用户运行：旧版是 root 运行，数据目录里的文件是 root 的，
+# 包用户写不了配置/日志。安装脚本若以 root 执行，把数据目录归还给应用
+# 用户；若已是包用户执行则跳过（chown 会失败也不影响安装）。
+if [ "$(id -u)" = "0" ] && [ -n "${TRIM_USERNAME:-}" ]; then
+    chown -R "${TRIM_USERNAME}:${TRIM_USERNAME}" "${DATA_DIR}" 2>/dev/null || true
+fi
+# Heal an inconsistent state (see install_init): if the settings say the
+# service is enabled but the marker file is still there, drop the marker so
+# the next boot actually starts the core.
+if grep -q '"enabled"[[:space:]]*:[[:space:]]*true' "${DATA_DIR}/app.json" 2>/dev/null; then
+    rm -f "${DATA_DIR}/disabled"
+fi
+exit 0

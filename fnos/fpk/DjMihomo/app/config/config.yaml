@@ -1,0 +1,19 @@
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+external-controller: 0.0.0.0:9090
+external-ui: ui/ange
+secret: ""
+# --- DjMihomo subscriptions (managed) ---
+proxies: []
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - DIRECT
+# --- end DjMihomo subscriptions ---
+rules:
+  - MATCH,PROXY

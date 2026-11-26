@@ -1,0 +1,192 @@
+#!/bin/bash
+
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+LOG_FILE="${DATA_DIR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/djmihomo.pid"
+MIHOMO="${TRIM_APPDEST}/bin/mihomo"
+BACKEND_PID_FILE="${DATA_DIR}/backend.pid"
+BACKEND_LOG="${DATA_DIR}/backend.log"
+BACKEND_BIN="${TRIM_APPDEST}/bin/djconsole"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
+}
+
+start_backend() {
+    if [ -r "${BACKEND_PID_FILE}" ]; then
+        bpid=$(head -n 1 "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+        if check_process "${bpid}"; then
+            return 0
+        fi
+        rm -f "${BACKEND_PID_FILE}"
+    fi
+
+    if [ ! -x "${BACKEND_BIN}" ]; then
+        log_msg "djconsole not found, skip"
+        return 0
+    fi
+
+    log_msg "Starting console backend ..."
+    DJMIHOMO_DATA="${DATA_DIR}" DJMIHOMO_BIN="${MIHOMO}" DJMIHOMO_CONSOLE_PORT=9091 DJMIHOMO_PID_FILE="${PID_FILE}" nohup "${BACKEND_BIN}" >> "${BACKEND_LOG}" 2>&1 &
+    printf "%s" "$!" > "${BACKEND_PID_FILE}"
+    log_msg "backend pid = $!"
+    return 0
+}
+
+stop_backend() {
+    if [ ! -r "${BACKEND_PID_FILE}" ]; then
+        return 0
+    fi
+
+    bpid=$(head -n 1 "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+    if ! check_process "${bpid}"; then
+        rm -f "${BACKEND_PID_FILE}"
+        return 0
+    fi
+
+    log_msg "send TERM signal to backend PID:${bpid}..."
+    kill -TERM ${bpid} >> ${LOG_FILE} 2>&1
+
+    local count=0
+    while check_process "${bpid}" && [ $count -lt 5 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if check_process "${bpid}"; then
+        log_msg "send KILL signal to backend PID:${bpid}..."
+        kill -KILL "${bpid}"
+        sleep 1
+    fi
+    rm -f "${BACKEND_PID_FILE}"
+    return 0
+}
+
+start_process() {
+    start_backend
+
+    # 这里只看核心在不在跑（不能用 status，因为控制台活着时 status 恒真，
+    # 那样核心停了也不会再拉起来）。
+    if mihomo_running; then
+        return 0
+    fi
+
+    if [ -f "${DATA_DIR}/disabled" ]; then
+        log_msg "service disabled, skip starting mihomo (enable it in the console)"
+        return 0
+    fi
+
+    log_msg "Starting mihomo ..."
+    mkdir -p "${DATA_DIR}/ui"
+
+    if [ ! -f "${DATA_DIR}/config.yaml" ] && [ -f "${TRIM_APPDEST}/config/config.yaml" ]; then
+        cp "${TRIM_APPDEST}/config/config.yaml" "${DATA_DIR}/config.yaml"
+        log_msg "default config installed"
+    fi
+
+    if [ ! -d "${DATA_DIR}/ui/ange" ] && [ -d "${TRIM_APPDEST}/dashboard" ]; then
+        cp -r "${TRIM_APPDEST}/dashboard" "${DATA_DIR}/ui/ange"
+        log_msg "UI installed"
+    fi
+
+    "${MIHOMO}" -d "${DATA_DIR}" >> ${LOG_FILE} 2>&1 &
+    printf "%s" "$!" > ${PID_FILE}
+    log_msg "mihomo pid = $!"
+    return 0
+}
+
+stop_process() {
+    log_msg "Stopping mihomo ..."
+    stop_backend
+
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        log_msg "pid=${pid}"
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            log_msg "remove pid file"
+            return
+        fi
+
+        log_msg "send TERM signal to PID:${pid}..."
+        kill -TERM ${pid} >> ${LOG_FILE} 2>&1
+
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "waiting process terminal... (${count}s/10s)"
+        done
+
+        if check_process "${pid}"; then
+            log_msg "send KILL signal to PID:${pid}..."
+            kill -KILL "${pid}"
+            sleep 1
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    return 0
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Mihomo 核心是否在跑（只看核心的 PID 文件）。
+mihomo_running() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
+    fi
+
+    return 1
+}
+
+# 应用是否在跑：控制台（djconsole）才是主服务。以前这里只看核心的 PID，
+# 核心一停 FnOS 就以为整个应用停了（桌面图标消失），其实控制台还活着。
+# 现在先看控制台，控制台活着应用就算在跑；控制台死了再看核心。
+status() {
+    if [ -f "${BACKEND_PID_FILE}" ]; then
+        bpid=$(head -n 1 "${BACKEND_PID_FILE}" | tr -d '[:space:]')
+        if check_process "${bpid}"; then
+            return 0
+        else
+            rm -f "${BACKEND_PID_FILE}"
+        fi
+    fi
+
+    if mihomo_running; then
+        return 0
+    fi
+
+    return 1
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    else
+        exit 3
+    fi
+    ;;
+*)
+    exit 1
+    ;;
+esac

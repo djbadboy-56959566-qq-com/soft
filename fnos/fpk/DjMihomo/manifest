@@ -1,0 +1,17 @@
+appname                    = DjMihomo
+version                    = 1.2.60
+display_name               = DjMihomo
+desc                       = <p>Mihomo 内核 v1.19.34，搭配 AnGe-ClashBoard 面板。</p>
+platform                   = arm
+source                     = thirdparty
+maintainer                 = djkyc
+maintainer_url             = https://github.com/djbadboy-56959566-qq-com/soft
+distributor                = djkyc
+distributor_url            = https://github.com/djbadboy-56959566-qq-com/soft
+ctl_stop                   = true
+desktop_uidir              = ui
+desktop_applaunchname      = DjMihomo.Application
+service_port               = 9091
+checkport                  = false
+disable_authorization_path = false
+changelog                  = 1.2.49：改为包用户运行（run-as=package），满足应用中心上架要求；开机自启修复：已启用时重装/重启不再误建 disabled，控制台开机自动拉起核心；订阅更新失败退避 30 分钟；修复核心退出后僵尸进程。

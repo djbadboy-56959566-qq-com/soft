@@ -1,0 +1,48 @@
+#!/bin/bash
+# NOTE: do NOT copy anything from ${TRIM_APPDEST} here unconditionally.
+# During an upgrade the app files from app.tgz (dashboard, config.yaml) are
+# not yet in TRIM_APPDEST when this runs — cp fails and FnOS aborts the whole
+# install with INSTALL_INIT_DATA_SHARE_EXCEPTION. The console restores the
+# panel (ensureDashboard) and the config (generateRunningConfig) on startup.
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+# Fresh install: stop any orphaned previous instance first, so a stale
+# console/core cannot keep holding 7890/9090/9091. Match by binary path.
+for bin in djconsole mihomo; do
+    pkill -TERM -f "DjMihomo/bin/${bin}" 2>/dev/null || true
+done
+sleep 2
+for bin in djconsole mihomo; do
+    pkill -KILL -f "DjMihomo/bin/${bin}" 2>/dev/null || true
+done
+mkdir -p "${DATA_DIR}/ui"
+# Bundled official geodata (MetaCubeX meta-rules-dat): install if missing so
+# Mihomo never has to download them (the download 403s on this network).
+# Capitalised names are what Mihomo looks for; lowercase symlinks cover the
+# download-URL spelling. Never overwrite an existing file (user may update).
+# Guarded on the source existing, so a missing app.tgz never fails the install.
+for f in GeoSite.dat GeoIP.dat Country.mmdb; do
+    if [ ! -f "${DATA_DIR}/$f" ] && [ -f "${TRIM_APPDEST}/geodata/$f" ]; then
+        cp "${TRIM_APPDEST}/geodata/$f" "${DATA_DIR}/$f"
+    fi
+done
+ln -sf GeoSite.dat "${DATA_DIR}/geosite.dat"
+ln -sf GeoIP.dat "${DATA_DIR}/geoip.dat"
+ln -sf Country.mmdb "${DATA_DIR}/country.mmdb"
+# 1.2.49 起以包用户运行：旧版是 root 运行，数据目录里的文件是 root 的，
+# 包用户写不了配置/日志。安装脚本若以 root 执行，把数据目录归还给应用
+# 用户；若已是包用户执行则跳过（chown 会失败也不影响安装）。
+if [ "$(id -u)" = "0" ] && [ -n "${TRIM_USERNAME:-}" ]; then
+    chown -R "${TRIM_USERNAME}:${TRIM_USERNAME}" "${DATA_DIR}" 2>/dev/null || true
+fi
+# Preserve the user's choice across reinstalls: only default to disabled when
+# there is no prior enabled setting. A fresh install over existing data where
+# the user had already enabled the service must NOT silently disable it again
+# (that left the core dead after the next reboot until manually re-enabled).
+# Also heal an inconsistent state (app.json says enabled but the marker is
+# still there) by removing the stale marker.
+if grep -q '"enabled"[[:space:]]*:[[:space:]]*true' "${DATA_DIR}/app.json" 2>/dev/null; then
+    rm -f "${DATA_DIR}/disabled"
+elif [ ! -f "${DATA_DIR}/disabled" ]; then
+    printf "disabled by default install\n" > "${DATA_DIR}/disabled"
+fi
+exit 0
