@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="green">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dj净界 · NAS 广告拦截</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-64.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-64.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/icon-64.png">
+<link rel="icon" type="image/png" sizes="256x256" href="/icon-256.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icon-256.png">
+<style>
+:root{
+  --bg:#eef2ef; --surface:#ffffff; --surface2:#f4f7f5; --text:#17251d; --muted:#6b7a71;
+  --border:#e2e9e4; --accent:#0e9f6e; --accent2:#10b981; --accent-soft:#dff3e8; --accent-ink:#0b7a55;
+  --danger:#d92d20; --danger-soft:#fdecec; --warn-bg:#fff8db; --warn-border:#e8c90a; --warn-text:#6b5200;
+  --shadow:0 8px 28px rgba(20,60,40,.08); --shadow-sm:0 2px 10px rgba(20,60,40,.06);
+  --radius:18px; --on:#1db954;
+}
+[data-theme="white"]{ --bg:#f4f4f4; --surface:#fff; --surface2:#f6f6f6; --text:#111; --muted:#888;
+  --border:#e9e9e9; --accent:#111; --accent2:#333; --accent-soft:#ececec; --accent-ink:#111;
+  --shadow:0 8px 28px rgba(0,0,0,.07); --shadow-sm:0 2px 10px rgba(0,0,0,.05); }
+[data-theme="black"]{ --bg:#101010; --surface:#1d1d1d; --surface2:#262626; --text:#f0f0f0; --muted:#9a9a9a;
+  --border:#323232; --accent:#10b981; --accent2:#34d399; --accent-soft:#123527; --accent-ink:#4ade80;
+  --danger-soft:#3a1d1d; --warn-bg:#3a3000; --warn-border:#8a7500; --warn-text:#ffe98a;
+  --shadow:0 8px 28px rgba(0,0,0,.5); --shadow-sm:0 2px 10px rgba(0,0,0,.4); }
+[data-theme="red"]{ --bg:#fdf1f1; --surface:#fff; --surface2:#fbeeee; --text:#2b1414; --muted:#8a6a6a;
+  --border:#f0d8d8; --accent:#d92d20; --accent2:#ef4444; --accent-soft:#fdecec; --accent-ink:#b42318;
+  --shadow:0 8px 28px rgba(180,40,40,.08); --shadow-sm:0 2px 10px rgba(180,40,40,.06); }
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.4}
+a{color:var(--accent)}
+.wrap{display:flex;min-height:100vh}
+svg.ic{width:22px;height:22px;flex:none}
+aside{width:192px;background:var(--surface);border-right:1px solid var(--border);padding:12px 8px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.logo{display:flex;gap:10px;align-items:center;padding:2px 6px 10px}
+.logo .shield{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.logo .shield svg{width:20px;height:20px}
+.logo b{font-size:18px;font-weight:800;letter-spacing:.5px;display:block;line-height:1.1}
+.logo small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:3px}
+nav button{display:flex;width:100%;gap:10px;align-items:center;padding:8px 12px;margin:2px 0;border:0;border-radius:11px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;text-align:left}
+nav button svg{color:var(--muted)}
+nav button.active{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(14,159,110,.35)}
+nav button.active svg{color:#fff}
+nav button:hover:not(.active){background:var(--surface2)}
+.side-note{margin:auto 6px 0;padding:8px;border-radius:12px;background:var(--accent-soft);font-size:12px;color:var(--muted);line-height:1.5}
+.side-note b{color:var(--accent-ink);font-size:13px}
+main{flex:1;padding:10px 16px 12px;max-width:980px;min-width:0}
+.topbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:9px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.topbar h1{font-size:22px;margin:0;line-height:1.15;font-weight:800;letter-spacing:.5px}
+.topbar p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.switch-wrap{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.switch{width:52px;height:29px;border-radius:999px;background:#cbd5d1;border:0;cursor:pointer;position:relative;transition:.2s;flex:none}
+.switch::after{content:"";position:absolute;width:23px;height:23px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.switch.on{background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 4px 14px rgba(14,159,110,.35)}
+.switch.on::after{left:26px}
+.ver-chip{font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:2px 8px}
+.page{display:none}.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(20,60,40,.12)}
+.card .ic{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent-soft),var(--surface2));color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:6px;box-shadow:inset 0 0 0 1px var(--border)}
+.card .ic svg{width:20px;height:20px}
+.card h3{margin:0;font-size:13.5px;color:var(--muted);font-weight:600;text-align:center}
+.card .num{font-size:32px;font-weight:800;text-align:center;line-height:1.1;margin:1px 0;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.card .sub{font-size:12px;color:var(--accent-ink);text-align:center}
+.card .sub.muted{color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;box-shadow:var(--shadow);margin-bottom:10px}
+.panel h2{margin:0;font-size:16px;font-weight:800}
+.panel .desc{color:var(--muted);font-size:12.5px;margin:2px 0 8px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.panel-head .link{color:var(--accent);font-size:13.5px;font-weight:700;cursor:pointer;background:none;border:0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.row .t{font-weight:700;font-size:14.5px}
+.row .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+input,select{padding:8px 11px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:14px;width:100%}
+input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.btn{padding:8px 14px;border-radius:12px;border:1px solid var(--accent);background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(14,159,110,.25);transition:transform .15s ease,box-shadow .15s ease}
+.btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(14,159,110,.35)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.block{width:100%;padding:10px;font-size:14px}
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.tag.blocked{background:var(--danger-soft);color:var(--danger)}
+.tag.allowed{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.grey{background:var(--surface2);color:var(--muted)}
+.tag.event{background:var(--warn-bg);color:var(--warn-text)}
+.tag.on{background:var(--accent-soft);color:var(--accent-ink)}
+.alert{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:14px;padding:9px 12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;color:var(--warn-text)}
+.alert b{font-size:14.5px;color:var(--text)}
+[data-theme="black"] .alert b{color:#ffe98a}
+.hint{background:var(--accent-soft);border:1px solid var(--border);border-radius:14px;padding:9px 12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.hint b{font-size:14.5px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 5px;border-bottom:1px solid var(--border);text-align:left}
+th{color:var(--muted);font-size:12px;font-weight:600}
+.theme-dots{display:flex;gap:16px;padding:4px 0 2px}
+.dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;text-align:center;flex:none}
+.dot{position:relative}
+.dot.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dot.sel::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.dot.white.sel::after{color:#111;text-shadow:none}
+.dot.green.sel::after,.dot.red.sel::after,.dot.black.sel::after{color:#fff}
+.dot span{display:block;font-size:12px;margin-top:42px;color:var(--muted);white-space:nowrap}
+.dot.green{background:#0e9f6e}.dot.white{background:#fff;border-color:#ddd}.dot.black{background:#111}.dot.red{background:#d92d20}
+.muted{color:var(--muted);font-size:13px;line-height:1.55}
+.panel p.muted{margin:8px 0 0}
+.grid2{display:grid;grid-template-columns:1.35fr 1.1fr;gap:12px}
+.grid2.g-dev{grid-template-columns:1.35fr 1.1fr}
+.preset{border:2px solid var(--border);border-radius:14px;padding:10px;cursor:pointer}
+.preset.sel{border-color:var(--accent);background:var(--accent-soft)}
+.preset b{font-size:15px}
+.preset .pic{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.preset .pic svg{width:21px;height:21px}
+.preset .st{display:inline-block;margin-top:8px;font-size:12px;background:var(--surface2);border-radius:999px;padding:2px 9px;color:var(--muted)}
+.preset.sel .st{background:var(--surface);color:var(--accent-ink)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:9px 18px;border-radius:999px;font-size:13.5px;display:none;z-index:99;max-width:90vw;text-align:center}
+.chart-wrap{position:relative}
+.chart-empty{position:absolute;inset:30px 0 0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;text-align:center;padding:0 20px}
+.chart-foot{display:flex;gap:0;margin-top:6px;background:var(--surface2);border-radius:12px;padding:6px}
+.chart-foot div{flex:1;text-align:center}
+.chart-foot .k{font-size:12px;color:var(--muted)}
+.chart-foot .v{font-size:14px;font-weight:800;margin-top:2px}
+.dev{display:flex;gap:8px;align-items:center;padding:6px 2px;border-bottom:1px solid var(--border)}
+.dev:last-of-type{border-bottom:0}
+.dev .dic{width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.dev .dic svg{width:22px;height:22px}
+.dev .txt{flex:1;min-width:0}
+.dev .nm{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev .sb{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev .pill{margin-left:auto;font-size:12.5px;font-weight:700;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:3px 8px;white-space:nowrap;flex:none}
+.dev .pill.off{background:var(--surface2);color:var(--muted)}
+.dot-on{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--on);margin-right:5px}
+.dot-off{display:inline-block;width:8px;height:8px;border-radius:50%;background:#bbb;margin-right:5px}
+.footbar{margin-top:2px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:0 4px}
+.mnav{display:none}
+.guide{font-size:13.5px;line-height:1.8}
+.guide b{color:var(--accent-ink)}
+@media(max-width:900px){ .cards{grid-template-columns:repeat(2,1fr)} .grid2{grid-template-columns:1fr} }
+@media(max-width:760px){
+  aside{display:none}
+  main{padding:10px 12px 20px}
+  .topbar h1{font-size:20px}
+  .card .num{font-size:24px}
+  .mnav{display:flex;position:sticky;top:0;z-index:50;gap:8px;overflow-x:auto;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;margin:-12px -14px 14px}
+  .mnav button{flex:none;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:999px;padding:8px 14px;font-size:14px}
+  .mnav button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+}
+</style>
+</head>
+<body>
+<div class="mnav" id="mnav">
+  <button data-page="home" class="active">首页</button>
+  <button data-page="rules">规则管理</button>
+  <button data-page="whitelist">白名单</button>
+  <button data-page="logs">智能日志</button>
+  <button data-page="webdav">WebDAV备份</button>
+  <button data-page="settings">设置</button>
+</div>
+<div class="wrap">
+<aside>
+  <div class="logo"><span class="shield"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><span><b>Dj净界</b><small>NAS 广告拦截 · <span id="verSide">v1.0.9</span></small></span></div>
+  <nav id="sideNav">
+    <button data-page="home" class="active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>首页</button>
+    <button data-page="rules"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>规则管理</button>
+    <button data-page="whitelist"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1" fill="currentColor"/><circle cx="3.5" cy="12" r="1" fill="currentColor"/><circle cx="3.5" cy="18" r="1" fill="currentColor"/></svg>白名单</button>
+    <button data-page="logs"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 6-8 3 4"/><path d="M3 21h18"/></svg>智能日志</button>
+    <button data-page="webdav"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 18a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 10.5 3.5 3.5 0 0 0 7 17.5h10.5z"/><path d="M12 12v6M9.5 15.5L12 18l2.5-2.5"/></svg>WebDAV备份</button>
+    <button data-page="settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</button>
+  </nav>
+  <div class="side-note" id="sideNote"><b>规则库已更新</b><br>DNS 正在运行</div>
+</aside>
+<main>
+  <div class="topbar">
+    <div><h1 id="pageTitle">仪表盘</h1><p>实时监控与拦截统计 · 已安全保护你的网络</p></div>
+    <div class="switch-wrap"><span class="ver-chip" id="verChip">v1.0.9</span>保护状态 <button class="switch on" id="mainSwitch" title="总开关"></button> <span id="switchText">ON</span></div>
+  </div>
+
+  <!-- 首页 -->
+  <section class="page active" id="page-home">
+    <div id="rulesHint"></div>
+    <div class="cards">
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div><h3>今日拦截</h3><div class="num" id="stToday">0</div><div class="sub" id="stTodaySub">今日 · 实时更新</div></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div><h3>累计拦截</h3><div class="num" id="stTotal">0</div><div class="sub">自安装以来</div></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><h3>已接入设备</h3><div class="num" id="stDevices">0</div><div class="sub" id="stDevicesSub">按 DNS 客户端 IP 统计</div></div>
+      <div class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="2.8"/><path d="M4 5.5V18.5c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8V5.5"/><path d="M4 12c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8"/></svg></div><h3>规则数</h3><div class="num" id="stRules">0</div><div class="sub muted" id="stRulesSub">内置规则</div></div>
+    </div>
+    <div class="grid2 g-dev">
+      <div class="panel"><div class="panel-head"><h2>今日拦截趋势</h2><span class="muted" id="chartDate">今天</span></div>
+        <p class="desc">按小时统计 · 今日 00:00–24:00</p>
+        <div class="chart-wrap"><div id="chartBox"></div><div class="chart-empty" id="chartEmpty" style="display:none">暂无拦截数据<br>把电视、平板、手机的 DNS 指到 NAS 后，曲线就会出现</div></div>
+        <div class="chart-foot">
+          <div><div class="k">峰值</div><div class="v" id="chartPeak">—</div></div>
+          <div><div class="k">平均</div><div class="v" id="chartAvg">—</div></div>
+          <div><div class="k">今日拦截</div><div class="v" id="chartTotal">—</div></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-head"><h2>已接入设备</h2><span class="link" onclick="showPage('devices')">查看全部 ›</span></div>
+        <p class="desc">最近有 DNS 查询的设备 · 5 分钟内有查询、或还在局域网内，都算在线</p>
+        <div id="deviceList"></div>
+        <button class="btn ghost block" style="margin-top:14px" onclick="toggleGuide()">＋ 添加新设备</button>
+        <div id="addGuide" style="display:none;margin-top:12px" class="guide">
+          <b>接新设备三步：</b><br>1. 打开上方总开关；<br>2. 在新设备的 WiFi 设置里把 DNS 改成 NAS 的 IP（或路由器 DHCP 的 DNS 改成 NAS，全屋自动生效）；<br>3. 完成。设备一发起查询就会出现在这里。
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>运行状态</h2><p class="desc">DNS 与 Web 服务</p>
+        <div class="row"><div><div class="t">DNS 端口</div><div class="d" id="dnsPortLine">—</div></div><span class="tag allowed" id="dnsTag">运行中</span></div>
+        <div class="row"><div><div class="t">上游 DNS</div><div class="d">223.5.5.5 / 119.29.29.29（阿里 / 腾讯）</div></div></div>
+        <div class="row"><div><div class="t">运行时间</div><div class="d" id="uptimeLine">—</div></div></div>
+        <div class="row"><div><div class="t">下次规则更新</div><div class="d" id="nextUpdateLine">—</div></div><button class="btn ghost btn-update" onclick="updateRules()">立即更新</button></div>
+        <p class="muted"><b>注意：</b>DNS 只能拦广告域名。和视频正片走同一个域名的贴片广告拦不了，拦了会连视频一起断。电视、手机 App 的开屏广告大部分拦掉后 1 秒左右自己跳过，少数 App 会等超时才进。</p>
+      </div>
+      <div class="panel"><h2>三步接通全屋</h2><p class="desc">1. 打开上方总开关 → 2. 路由器 DHCP 的 DNS 改成 NAS 的 IP → 3. 完成。电视、平板、手机连 WiFi 自动生效，不用一台台改。主 DNS 填 NAS，备用填 223.5.5.5，NAS 关机也能上网。</p>
+        <div class="row"><div><div class="t">已接入设备</div><div class="d">按 DNS 客户端 IP 统计</div></div><b id="guideDevices">0 台</b></div>
+        <div class="row"><div><div class="t">今日拦截</div><div class="d">广告请求被拦掉的次数</div></div><b id="guideToday">0 次</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 全部设备 -->
+  <section class="page" id="page-devices">
+    <div class="panel"><div class="panel-head"><h2>全部设备</h2><button class="btn ghost" style="padding:6px 14px" onclick="showPage('home')">‹ 返回仪表盘</button></div>
+      <p class="desc">所有接入过的设备（按 DNS 客户端 IP 统计）· 在线 = 5 分钟内有查询，或还在局域网内（ARP 表里有该 IP，手机熄屏也算在线） · 最多记录 256 台 · 按拦截数排序 · 点“改名”可以手动起名字、选类型；设备名也会从路由器反查自动获得</p>
+      <div id="allDeviceList" style="max-height:480px;overflow-y:auto"></div>
+      <p class="muted" style="margin-top:10px" id="allDeviceMeta"></p>
+    </div>
+  </section>
+
+  <!-- 规则 -->
+  <section class="page" id="page-rules">
+    <div class="panel"><div class="panel-head"><h2>规则管理</h2><span class="muted" id="groupSummary">—</span></div>
+      <p class="desc">内置国内外规则默认全开，一键开关；自动更新时间在设置里修改</p>
+      <div id="groupList"></div>
+      <div class="row"><div><div class="t">自动更新</div><div class="d" id="updateLine">每天 03:00 自动更新规则库</div></div><button class="btn ghost btn-update" onclick="updateRules()">立即更新</button></div>
+      <div style="margin-top:14px"><button class="btn block" onclick="showAddRule()">＋ 添加自定义规则</button></div>
+      <div id="addRuleBox" style="display:none;margin-top:10px">
+        <input id="customRuleInput" placeholder="输入域名，如 ads.example.com（支持粘贴多行，一行一个）">
+        <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="addCustomRule()">添加</button><button class="btn ghost" onclick="document.getElementById('addRuleBox').style.display='none'">取消</button></div>
+      </div>
+      <div style="margin-top:16px"><h3 style="margin:0 0 8px">自定义规则 <span class="muted" id="customCount"></span></h3><div id="customList"></div></div>
+      <div style="margin-top:16px"><h3 style="margin:0 0 8px">订阅规则</h3>
+        <div style="display:flex;gap:8px"><input id="subInput" placeholder="粘贴订阅链接 http(s)://…"><button class="btn" onclick="addSub()">添加订阅</button></div>
+        <div id="subList" style="margin-top:8px"></div></div>
+      <p class="muted" style="margin-top:14px">ⓘ 规则更新于后台进行，拉取中面板可正常用；拉取失败会保留旧规则，不会断网。</p>
+    </div>
+  </section>
+
+  <!-- 白名单 -->
+  <section class="page" id="page-whitelist">
+    <div class="panel"><div class="panel-head"><h2>白名单</h2><span class="muted" id="wlCount">—</span></div>
+      <p class="desc">白名单域名跳过所有拦截规则，只添加你信任的域名</p>
+      <div style="display:flex;gap:8px"><input id="wlInput" placeholder="输入域名一键放行，如 example.com"><button class="btn" onclick="addWhitelist()">放行 ＋</button></div>
+      <div id="wlList" style="margin-top:14px"></div>
+      <p class="muted" style="margin-top:14px">ⓘ 白名单域名将跳过所有广告拦截规则，注意仅添加可信域名。也可以在「智能日志」里对被拦的域名一键加白。</p>
+    </div>
+  </section>
+
+  <!-- 日志 -->
+  <section class="page" id="page-logs">
+    <div id="alertBox"></div>
+    <div class="panel"><div class="panel-head"><h2>智能日志 <span class="tag allowed">实时日志 · 正在监听</span></h2><span style="display:flex;gap:8px;align-items:center"><span class="muted">自动刷新 2 秒</span><button class="btn ghost" style="padding:6px 14px" onclick="refreshLogs()">↻ 手动刷新</button></span></div>
+      <p class="desc"><span id="logMeta">共 0 条 · 每页 10 条</span> · 日志只保存 3 天，每天 00:00 自动删除过期，临期 24 小时内的标“明天删除”。</p>
+      <table><thead><tr><th>时间</th><th>域名</th><th>客户端</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody id="logBody"></tbody></table>
+      <div id="logPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:12px">
+        <button class="btn ghost" id="logPrevBtn" style="padding:6px 14px" onclick="logPrevPage()">‹ 上一页</button>
+        <span class="muted" id="logPageInfo">第 1 页 / 共 1 页</span>
+        <button class="btn ghost" id="logNextBtn" style="padding:6px 14px" onclick="logNextPage()">下一页 ›</button>
+      </div>
+      <p class="muted" style="margin-top:10px" id="logFoot">第 1 页 / 共 1 页</p>
+      <p class="muted" id="dismissedLine" style="margin-top:6px;display:none">已忽略 <span id="dismissedCount">0</span> 条提醒 · <span style="color:var(--accent);font-weight:700;cursor:pointer" onclick="restoreAlerts()">恢复</span></p>
+    </div>
+  </section>
+
+  <!-- WebDAV -->
+  <section class="page" id="page-webdav">
+    <div class="panel"><h2>WebDAV备份</h2><p class="desc">备份只含自定义规则、订阅、白名单、设置和主题，不含 WebDAV 密码和任何 token。恢复时列出最新 3 个备份，选一个一键恢复，不用一条条重加。</p>
+      <h3 style="margin:0 0 10px">备份源预设</h3>
+      <div class="grid2">
+        <div class="preset sel" id="preset-jianguoyun" onclick="pickPreset('jianguoyun')"><div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 18a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 10.5 3.5 3.5 0 0 0 7 17.5h10.5z"/><path d="M12 12v6M9.5 15.5L12 18l2.5-2.5"/></svg></div><b>坚果云</b><div class="muted">https://dav.jianguoyun.com/dav/<br>密码请用应用密码，不是登录密码</div><span class="st">默认备份</span></div>
+        <div class="preset" id="preset-infinicloud" onclick="pickPreset('infinicloud')"><div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 18a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 10.5 3.5 3.5 0 0 0 7 17.5h10.5z"/><path d="M12 12v6M9.5 15.5L12 18l2.5-2.5"/></svg></div><b>InfiniCLOUD 日本</b><div class="muted">https://higa.teracloud.jp/dav/<br>东京节点（已按你给的地址更正）</div><span class="st">备用</span></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn ghost" onclick="pickPreset('custom')">＋ 自定义服务器</button></div>
+      <div style="margin-top:14px;display:grid;gap:10px">
+        <input id="davUrl" placeholder="WebDAV 地址">
+        <input id="davUser" placeholder="账号">
+        <input id="davPass" type="password" placeholder="密码（只存本机，不进备份文件）">
+      </div>
+      <h3 style="margin:18px 0 10px">操作</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="davTest()">测试连接</button>
+        <button class="btn ghost" onclick="davBackup()">↑ 备份到 WebDAV</button>
+        <button class="btn ghost" onclick="davList()">↓ 从 WebDAV 恢复</button>
+      </div>
+      <p class="muted" id="davMsg"></p>
+      <div id="davBackups" style="margin-top:8px"></div>
+      <div style="margin-top:14px"><button class="btn block" onclick="davBackup()">立即执行备份</button></div>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <section class="page" id="page-settings">
+    <div class="panel"><h2>主题选择</h2><p class="desc">界面主题 · 选择配色方案（一点就换，自动保存）</p>
+      <div class="theme-dots">
+        <div class="dot green sel" data-theme="green" onclick="setTheme('green')"><span>墨绿</span></div>
+        <div class="dot white" data-theme="white" onclick="setTheme('white')"><span>纯白</span></div>
+        <div class="dot black" data-theme="black" onclick="setTheme('black')"><span>深黑</span></div>
+        <div class="dot red" data-theme="red" onclick="setTheme('red')"><span>红色</span></div>
+      </div>
+    </div>
+    <div class="panel"><h2>规则更新频率</h2><p class="desc">自由定时更新</p>
+      <select id="intervalSel" onchange="setUpdateInterval(this.value)">
+        <option value="1h">每 1 小时</option><option value="6h">每 6 小时</option>
+        <option value="12h">每 12 小时</option><option value="daily">每天（按下面时间）</option>
+        <option value="weekly">每周一次</option><option value="manual">只手动更新</option>
+      </select>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <label for="updateTimeInput" style="font-weight:700;font-size:14px">每天自动更新时间</label>
+        <input type="time" id="updateTimeInput" value="03:00" style="width:130px" onchange="setUpdateTime(this.value)">
+        <span class="muted">每天 / 每周更新时按这个时间执行；按小时更新时不生效</span>
+      </div>
+      <p class="muted" id="intervalNote"></p>
+    </div>
+    <div class="panel"><h2>在线升级</h2><p class="desc">检查 soft 仓库的新版 Dj净界</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="checkVersion()">检查新版本</button><span class="muted" id="verMsg">当前 v1.0.9</span></div>
+      <p class="muted">在线升级只做版本提示和下载链接，不会自动替换运行中的 fpk（FnOS 上自动安装未经实机验证，暂不做）。</p>
+    </div>
+    <div class="panel"><h2>关于</h2><p class="muted">Dj净界 · NAS 全屋 DNS 去广告 · 开源发布于 soft 仓库 fnos/fpk<br>DNS 53（绑不上自动落 5354 / 15353）· Web 面板 9092 · 日志只存 3 天</p></div>
+  </section>
+
+  <div class="footbar"><span id="footLeft">Dj净界 · v1.0.9</span><span id="footRight">数据已自动同步</span></div>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let status={};
+function fmt(n){return Number(n||0).toLocaleString('en-US');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+async function api(p,o){const r=await fetch(p,o?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}:undefined);return r.json();}
+function showPage(name){
+  devEditing='';
+  document.querySelectorAll('#sideNav button, #mnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
+  document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('pageTitle').textContent={home:'仪表盘',rules:'规则管理',whitelist:'白名单',logs:'智能日志',webdav:'WebDAV备份',settings:'设置',devices:'全部设备'}[name];
+  if(name==='logs')loadLogs(); if(name==='rules')loadRules(); if(name==='whitelist')loadWhitelist(); if(name==='devices')renderAllDevices(status.deviceList);
+  if(name==='home')refreshStatus();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#sideNav button, #mnav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function toggleGuide(){const g=document.getElementById('addGuide');g.style.display=g.style.display==='none'?'block':'none';}
+// 平滑面积折线：Catmull-Rom 转贝塞尔，纯 SVG，无外部库
+function smoothPath(pts){
+  if(pts.length<2)return '';
+  let d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+    const c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=' C '+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+  }
+  return d;
+}
+function drawTrend(hourly){
+  const box=document.getElementById('chartBox'), empty=document.getElementById('chartEmpty');
+  const data=(hourly||[]).slice(0,24); while(data.length<24)data.push(0);
+  const total=data.reduce((a,b)=>a+b,0);
+  const max=Math.max.apply(null,data);
+  const nowH=new Date().getHours();
+  const peakH=data.indexOf(max);
+  document.getElementById('chartPeak').textContent=max>0?(fmt(max)+' · '+String(peakH).padStart(2,'0')+':00'):'—';
+  document.getElementById('chartAvg').textContent=fmt(Math.round(total/Math.max(1,nowH+1)))+'/小时';
+  document.getElementById('chartTotal').textContent=fmt(total);
+  if(total===0){ box.innerHTML=''; empty.style.display='flex'; return; }
+  empty.style.display='none';
+  const W=640,H=120,PL=44,PR=12,PT=10,PB=24, iw=W-PL-PR, ih=H-PT-PB;
+  const yMax=max*1.15;
+  const pts=data.map((v,i)=>[PL+iw*i/23, PT+ih-(v/yMax)*ih]);
+  const line=smoothPath(pts);
+  const area=line+' L '+pts[23][0].toFixed(1)+' '+(PT+ih)+' L '+pts[0][0].toFixed(1)+' '+(PT+ih)+' Z';
+  let grid='';
+  [0,0.5,1].forEach(f=>{const y=PT+ih*f; grid+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/><text x="'+(PL-8)+'" y="'+(y+4)+'" font-size="11" fill="var(--muted)" text-anchor="end">'+fmt(Math.round(yMax*(1-f)))+'</text>';});
+  let xl='';
+  for(let h=0;h<=24;h+=3){const x=PL+iw*h/24; xl+='<text x="'+x+'" y="'+(H-6)+'" font-size="11" fill="var(--muted)" text-anchor="middle">'+String(h%24).padStart(2,'0')+':00</text>';}
+  const px=pts[peakH];
+  box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'
+    +'<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity=".02"/></linearGradient></defs>'
+    +grid+'<path d="'+area+'" fill="url(#ag)"/><path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>'
+    +'<circle cx="'+px[0].toFixed(1)+'" cy="'+px[1].toFixed(1)+'" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>'+xl+'</svg>';
+  const d=new Date();
+  document.getElementById('chartDate').textContent='今天 · '+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function deviceIcon(t){
+  const p={
+    phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18.5h2"/>',
+    tablet:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18.5h2"/>',
+    tv:'<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M8 2l4 4 4-4"/><path d="M12 19v2.5"/>',
+    router:'<path d="M12 9V4"/><path d="M12 4a2.5 2.5 0 0 1 2.5 2.5"/><rect x="2" y="9" width="20" height="8" rx="2"/><path d="M6 13h.01M10 13h.01M14 13h.01"/>',
+    pc:'<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    server:'<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/>',
+    other:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/>'
+  };
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(p[t]||p.other)+'</svg>';
+}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let devEditing='';
+function deviceRow(d){
+  const nm=d.name||d.ip;
+  const last=d.lastSeen?new Date(d.lastSeen*1000).toLocaleTimeString('zh-CN',{hour12:false}):'—';
+  let sub=(d.online?'在线':'离线')+' · 最后活跃 '+last;
+  if(d.name&&d.name!==d.ip) sub=d.ip+' · '+sub;
+  const hints=[];
+  if(d.vendor) hints.push(d.vendor);
+  if(d.host&&d.host!==d.name) hints.push(d.host);
+  if(hints.length) sub+=' · '+hints.join(' · ');
+  const ed='ed-'+d.ip.replaceAll('.','-');
+  const typeSel=['phone|手机','tablet|平板','tv|电视','router|路由器','pc|电脑','server|服务器','other|其他'].map(o=>{const v=o.split('|');return '<option value="'+v[0]+'"'+((d.customType||d.type||'pc')===v[0]?' selected':'')+'>'+v[1]+'</option>';}).join('');
+  return '<div class="dev"><div class="dic">'+deviceIcon(d.type||'pc')+'</div><div class="txt"><div class="nm">'+escHtml(nm)+'</div><div class="sb"><span class="'+(d.online?'dot-on':'dot-off')+'"></span>'+escHtml(sub)+'</div></div><span class="pill'+(d.online?'':' off')+'">拦截 '+fmt(d.blocked)+'</span><button class="btn ghost" style="padding:4px 8px;flex:none" onclick="toggleDevEdit(\''+d.ip+'\')">改名</button></div>'
+  +'<div class="dev-edit" id="'+ed+'" style="display:none;padding:8px 2px 12px;border-bottom:1px solid var(--border)">'
+  +'<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="'+ed+'-name" placeholder="名字，如 客厅电视（留空清除手动名）" value="'+escHtml(d.customName||'')+'" style="flex:2;min-width:140px">'
+  +'<select id="'+ed+'-type" style="flex:1;min-width:110px">'+typeSel+'</select></div>'
+  +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" style="padding:6px 16px" onclick="saveDev(\''+d.ip+'\')">保存</button><button class="btn ghost" style="padding:6px 14px" onclick="toggleDevEdit(\''+d.ip+'\')">取消</button></div></div>';
+}
+function toggleDevEdit(ip){
+  const id='ed-'+ip.replaceAll('.','-');
+  const el=document.getElementById(id);
+  const willShow=el&&el.style.display==='none';
+  document.querySelectorAll('.dev-edit').forEach(e=>e.style.display='none');
+  if(el) el.style.display=willShow?'block':'none';
+  devEditing=willShow?ip:'';
+}
+async function saveDev(ip){
+  const ed='ed-'+ip.replaceAll('.','-');
+  const name=document.getElementById(ed+'-name').value.trim();
+  const type=document.getElementById(ed+'-type').value;
+  const r=await api('/api/device',{ip:ip,name:name,type:type});
+  if(!r.ok){toast(r.msg||'保存失败');return;}
+  toast('设备已保存 ✓');toggleDevEdit(ip);refreshStatus();
+}
+function renderDevices(list){
+  if(devEditing) return;
+  const el=document.getElementById('deviceList');
+  const arr=list||[];
+  if(!arr.length){
+    el.innerHTML='<p class="muted" style="margin:6px 0">暂无设备接入<br>把电视、平板、手机的 DNS 改成 NAS 的 IP，设备一发起查询就会出现在这里。</p>';
+    return;
+  }
+  el.innerHTML=arr.slice(0,8).map(deviceRow).join('')+(arr.length>8?'<p class="muted" style="margin:8px 0 0">还有 '+(arr.length-8)+' 台设备，点右上角“查看全部”看完整列表</p>':'');
+}
+function renderAllDevices(list){
+  if(devEditing) return;
+  const el=document.getElementById('allDeviceList');
+  const meta=document.getElementById('allDeviceMeta');
+  const arr=list||[];
+  if(!arr.length){
+    el.innerHTML='<p class="muted" style="margin:6px 0">暂无设备接入<br>把电视、平板、手机的 DNS 改成 NAS 的 IP，设备一发起查询就会出现在这里。</p>';
+    meta.textContent='';
+    return;
+  }
+  el.innerHTML=arr.map(deviceRow).join('');
+  meta.textContent='共 '+arr.length+' 台设备 · 按拦截数排序 · 每 2 秒自动刷新';
+}
+async function refreshStatus(){
+  status=await api('/api/status');
+  document.getElementById('stToday').textContent=fmt(status.todayBlocked);
+  document.getElementById('stTotal').textContent=fmt(status.totalBlocked);
+  document.getElementById('stDevices').textContent=fmt(status.devices);
+  document.getElementById('stRules').textContent=fmt(status.rulesCount);
+  const onN=status.onlineDevices||0, offN=Math.max(0,(status.devices||0)-onN);
+  document.getElementById('stDevicesSub').textContent=status.devices?('在线 '+onN+' · 离线 '+offN):'按 DNS 客户端 IP 统计';
+  document.getElementById('stTodaySub').textContent=status.todayBlocked?('今日 · 实时更新'):('今日暂无拦截');
+  const hint=document.getElementById('rulesHint');
+  if(!status.lastRuleUpdate && (status.rulesCount||0)<1000){
+    const updBtn=updatingRules?'<button class="btn btn-update" style="margin-left:auto" disabled>更新中…</button>':'<button class="btn btn-update" style="margin-left:auto" onclick="updateRules()">立即更新</button>';
+    hint.innerHTML='<div class="hint"><span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex:none">!</span><div><b>规则还是内置的 '+fmt(status.rulesCount)+' 条</b><br><span class="muted">点「立即更新」可拉取约 26 万条国内外规则，下次自动更新 '+(status.nextUpdate||'—')+'</span></div>'+updBtn+'</div>';
+    document.getElementById('stRulesSub').textContent='内置规则 · 未拉取过';
+  } else {
+    hint.innerHTML='';
+    document.getElementById('stRulesSub').textContent='已更新至 '+(status.lastRuleUpdate||'—');
+  }
+  document.getElementById('dnsPortLine').textContent=status.dnsPort===53?'正在监听 53 端口（手机、电视直接用 53）':'正在监听 '+status.dnsPort+' 端口（系统已把 53 转发到 '+status.dnsPort+'，手机、电视照常用 53）';
+  const dt=document.getElementById('dnsTag');
+  dt.textContent=status.dnsOK?'运行中':'未监听'; dt.className='tag '+(status.dnsOK?'allowed':'blocked');
+  document.getElementById('uptimeLine').textContent=status.uptime;
+  document.getElementById('nextUpdateLine').textContent=status.nextUpdate||'—';
+  document.getElementById('verSide').textContent='v'+status.version;
+  document.getElementById('verChip').textContent='v'+status.version;
+  document.getElementById('sideNote').innerHTML='<b>规则库 '+fmt(status.rulesCount)+' 条</b><br>DNS '+status.dnsPort+' 端口运行中';
+  const sw=document.getElementById('mainSwitch');
+  sw.classList.toggle('on',status.enabled);
+  document.getElementById('switchText').textContent=status.enabled?'ON':'OFF';
+  document.getElementById('intervalSel').value=status.updateInterval||'daily';
+  document.getElementById('updateTimeInput').value=status.updateTime||'03:00';
+  document.getElementById('intervalNote').textContent='下次更新：'+(status.nextUpdate||'—');
+  document.getElementById('guideDevices').textContent=fmt(status.devices)+' 台';
+  document.getElementById('guideToday').textContent=fmt(status.todayBlocked)+' 次';
+  document.getElementById('footLeft').textContent='Dj净界 · v'+status.version+' · DNS '+status.dnsPort+' 端口';
+  document.getElementById('footRight').textContent='运行时间 '+status.uptime+' · 上次规则更新 '+(status.lastRuleUpdate||'—');
+  applyTheme(status.theme);
+  drawTrend(status.todayHourly);
+  renderDevices(status.deviceList);
+  renderAllDevices(status.deviceList);
+}
+let logPage=1;
+const LOG_PAGE_SIZE=10;
+let logRows=[];
+function logRowHtml(l){
+  const t=new Date(l.time).toLocaleTimeString('zh-CN',{hour12:false});
+  const exp=l.expiring?' <span class="tag grey">明天删除</span>':'';
+  if(l.kind==='event'){
+    return '<tr><td>'+t+exp+'</td><td colspan="2">'+escHtml(l.event||'')+'</td><td><span class="tag event">事件</span></td><td></td><td></td></tr>';
+  }
+  return '<tr><td>'+t+exp+'</td><td>'+l.domain+'</td><td>'+l.client+'</td><td>'+(l.blocked?'<span class="tag blocked">已拦截</span>':'<span class="tag allowed">已放行</span>')+'</td><td>'+(l.source||'')+'</td><td>'+(l.blocked?'<button class="btn ghost" style="padding:5px 10px" onclick="quickAllow(\''+l.domain+'\')">加白名单</button>':'')+'</td></tr>';
+}
+function renderLogPage(){
+  const total=logRows.length;
+  const pages=Math.max(1,Math.ceil(total/LOG_PAGE_SIZE));
+  if(logPage>pages) logPage=pages;
+  if(logPage<1) logPage=1;
+  const start=(logPage-1)*LOG_PAGE_SIZE;
+  const pageRows=logRows.slice(start,start+LOG_PAGE_SIZE);
+  document.getElementById('logBody').innerHTML=pageRows.map(logRowHtml).join('')||'<tr><td colspan="6" class="muted">暂无日志，等设备发起 DNS 查询就会出现</td></tr>';
+  document.getElementById('logFoot').textContent=total?('第 '+logPage+' 页 / 共 '+pages+' 页 · 显示 '+(start+1)+'–'+Math.min(start+LOG_PAGE_SIZE,total)+' / 共 '+fmt(total)+' 条'):'暂无日志';
+  const pg=document.getElementById('logPager');
+  pg.style.display=pages>1?'flex':'none';
+  document.getElementById('logPageInfo').textContent='第 '+logPage+' 页 / 共 '+pages+' 页';
+  document.getElementById('logPrevBtn').disabled=logPage<=1;
+  document.getElementById('logNextBtn').disabled=logPage>=pages;
+}
+function logPrevPage(){ if(logPage>1){ logPage--; renderLogPage(); } }
+function logNextPage(){ const pages=Math.max(1,Math.ceil(logRows.length/LOG_PAGE_SIZE)); if(logPage<pages){ logPage++; renderLogPage(); } }
+async function loadLogs(){
+  const d=await api('/api/logs');
+  document.getElementById('logMeta').textContent='共 '+fmt(d.total)+' 条 · 每页 10 条';
+  logRows=d.logs||[];
+  renderLogPage();
+  const disN=d.dismissed||0;
+  document.getElementById('dismissedCount').textContent=fmt(disN);
+  document.getElementById('dismissedLine').style.display=disN>0?'block':'none';
+  document.getElementById('alertBox').innerHTML=(d.alerts||[]).map(a=>
+    '<div class="alert"><span style="width:26px;height:26px;border-radius:50%;background:#e8c90a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex:none">!</span><div><b>'+a.domain+' 在黑名单中（近 1 小时被拦 '+a.count+' 次，来源：'+a.source+'）</b><br><span class="muted">这是你要打开的网站吗？点一键加白名单就能放行，不用翻设置。</span></div>'
+    +'<button class="btn" onclick="quickAllow(\''+a.domain+'\')">一键加白名单 →</button>'
+    +'<button class="btn ghost" onclick="toast(\'放行教程：点“一键加白名单”→ 刷新要打开的页面 → 还打不开就检查域名有没有输错，或在白名单里删掉重加\')">查看放行教程 →</button>'
+    +'<button class="btn ghost" style="padding:4px 10px;margin-left:auto;align-self:flex-start;flex:none" onclick="dismissAlert(\''+a.domain+'\')">✕ 不再提醒</button></div>').join('');
+}
+async function dismissAlert(domain){
+  await api('/api/alerts/dismiss',{domain:domain});
+  toast('已忽略该提醒');
+  loadLogs();
+}
+async function restoreAlerts(){
+  await api('/api/alerts/restore',{});
+  toast('提醒已恢复');
+  loadLogs();
+}
+function refreshLogs(){loadLogs();toast('日志已刷新 ✓');}
+async function quickAllow(d){await api('/api/whitelist',{domain:d});toast(d+' 已加入白名单 ✓');loadLogs();loadWhitelist();}
+async function loadRules(){
+  const d=await api('/api/rules');
+  const gs=d.groups||[];
+  const onN=gs.filter(g=>g.enabled).length;
+  document.getElementById('groupSummary').textContent='共 '+gs.length+' 个规则组 · '+onN+' 个已启用';
+  const desc={'adguard-cn':'广告拦截 · 中文适配规则','easylist-china':'中文站点过滤规则','anti-ad':'国内广告拦截增强','adguard-base':'基础广告过滤规则','easylist':'通用广告过滤规则','easyprivacy':'隐私追踪过滤规则','adguard-mobile':'手机 App 广告过滤','adguard-dns':'DNS 层广告域名过滤'};
+  document.getElementById('groupList').innerHTML=gs.map((g,i)=>
+    '<div class="row"><div><div class="t"><svg style="width:17px;height:17px;vertical-align:-3px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> '+g.name+'</div><div class="d">'+(desc[g.id]||'')+(g.count?' · '+fmt(g.count)+' 条':'')+(g.lastUpdate?' · 更新于 '+g.lastUpdate:' · 内置规则，未拉取过')+(g.error?' · 更新失败：'+g.error:'')+'</div></div>'
+    +'<button class="switch '+(g.enabled?'on':'')+'" onclick="toggleGroup('+i+','+!g.enabled+')"></button></div>').join('');
+  document.getElementById('customCount').textContent='（'+(d.custom||[]).length+' 条）';
+  document.getElementById('customList').innerHTML=(d.custom||[]).map(c=>'<div class="row"><div class="t">'+c+'</div><button class="btn danger" style="padding:5px 12px" onclick="delCustom(\''+c+'\')">删除</button></div>').join('')||'<p class="muted">暂无自定义规则</p>';
+  document.getElementById('subList').innerHTML=(d.subscriptions||[]).map(s=>'<div class="row"><div><div class="t">'+s.url+'</div><div class="d">'+(s.count?fmt(s.count)+' 条 · ':'')+(s.lastUpdate||'')+'</div></div><button class="btn danger" style="padding:5px 12px" onclick="delSub(\''+s.url+'\')">删除</button></div>').join('')||'<p class="muted">暂无订阅</p>';
+  document.getElementById('updateLine').textContent='自动更新：'+({ '1h':'每 1 小时','6h':'每 6 小时','12h':'每 12 小时','daily':'每天 '+(status.updateTime||'03:00'),'weekly':'每周一次（'+(status.updateTime||'03:00')+'）','manual':'只手动更新'})[status.updateInterval||'daily'];
+}
+async function toggleGroup(i,en){const d=await api('/api/rules');const g=d.groups[i];const r=await api('/api/rules/group',{id:g.id,enabled:en});toast(r.ok?('已'+(en?'启用 ':'停用 ')+g.name):(r.msg||'失败'));loadRules();}
+function showAddRule(){document.getElementById('addRuleBox').style.display='block';}
+async function addCustomRule(){
+  const v=document.getElementById('customRuleInput').value;
+  for(const line of v.split('\n')){const d=line.trim();if(d)await api('/api/rules/custom',{domain:d});}
+  document.getElementById('customRuleInput').value='';toast('自定义规则已添加 ✓');loadRules();
+}
+async function delCustom(d){await fetch('/api/rules/custom',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:d})});loadRules();}
+async function addSub(){const u=document.getElementById('subInput').value.trim();if(!u)return;const r=await api('/api/rules/subscription',{url:u});toast(r.ok?'订阅已添加 ✓ 下次更新时拉取':(r.msg||'添加失败'));document.getElementById('subInput').value='';loadRules();}
+async function delSub(u){await fetch('/api/rules/subscription',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})});loadRules();}
+let updatingRules=false;
+function setUpdateBtns(dis){
+  document.querySelectorAll('.btn-update').forEach(b=>{b.disabled=dis;b.textContent=dis?'更新中…':'立即更新';});
+}
+async function updateRules(){
+  if(updatingRules) return;
+  updatingRules=true;
+  setUpdateBtns(true);
+  try{
+    let before=null;
+    try{ before=await api('/api/rules'); }catch(e){}
+    const groups0=((before&&before.groups)||[]).filter(g=>g.enabled);
+    const snap={};
+    groups0.forEach(g=>{snap[g.id]={lu:g.lastUpdate||'',err:g.error||''};});
+    const r=await api('/api/rules/update',{});
+    if(!r.ok){ toast(r.msg||'更新启动失败'); return; }
+    // 后端是立即返回的异步更新：这里轮询 /api/rules 等整轮跑完再恢复按钮。
+    // 每组完成标志：lastUpdate 变了=成功，error 变了=失败（失败的组保留旧规则）。
+    // 单组拉取最长 30 秒；45 秒没新进展算整轮结束；最多等 300 秒。
+    const t0=Date.now();
+    let prevSettled=0, quiet=0;
+    while(Date.now()-t0<300000){
+      await new Promise(res=>setTimeout(res,3000));
+      let cur=null;
+      try{ cur=await api('/api/rules'); }catch(e){ continue; }
+      const gs=(cur.groups||[]).filter(g=>g.enabled);
+      if(!gs.length) break;
+      let settled=0;
+      gs.forEach(g=>{
+        const s=snap[g.id]||{lu:'',err:''};
+        if((g.lastUpdate||'')!==s.lu||(g.error||'')!==s.err) settled++;
+      });
+      if(settled>=gs.length) break;
+      if(settled>prevSettled){ prevSettled=settled; quiet=0; }
+      else if(settled>0){ quiet++; if(quiet>=15) break; }
+      else if(Date.now()-t0>90000) break;
+    }
+    let cur=null;
+    try{ cur=await api('/api/rules'); }catch(e){}
+    const gs=((cur&&cur.groups)||[]).filter(g=>g.enabled);
+    let okN=0; const failed=[];
+    gs.forEach(g=>{
+      const s=snap[g.id]||{lu:'',err:''};
+      if((g.lastUpdate||'')!==s.lu) okN++;
+      else failed.push(g.name||g.id);
+    });
+    try{ refreshStatus(); loadRules(); }catch(e){}
+    if(!gs.length){ toast('没有启用的规则组'); }
+    else if(failed.length===0){ toast('规则更新完成：'+okN+' 组全部成功 ✓'); }
+    else if(okN===0){ toast('规则更新失败：'+failed.length+' 组都没成功，旧规则还在用'); }
+    else{ toast('规则更新完成：成功 '+okN+' 组，失败 '+failed.length+' 组（'+failed.join('、')+' 保留旧规则）'); }
+  }catch(e){
+    toast('更新出错了，旧规则还在用');
+  }finally{
+    updatingRules=false;
+    setUpdateBtns(false);
+  }
+}
+async function loadWhitelist(){
+  const d=await api('/api/whitelist');
+  document.getElementById('wlCount').textContent='已放行 '+(d.whitelist||[]).length+' 个域名';
+  document.getElementById('wlList').innerHTML=(d.whitelist||[]).map(w=>'<div class="row"><div><div class="t"><svg style="width:17px;height:17px;vertical-align:-3px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg> '+w+'</div><div class="d">已放行</div></div><button class="btn danger" style="padding:5px 12px" onclick="delWl(\''+w+'\')">删除</button></div>').join('')||'<p class="muted">暂无白名单</p>';
+}
+async function addWhitelist(){const v=document.getElementById('wlInput').value.trim();if(!v)return;const r=await api('/api/whitelist',{domain:v});if(!r.ok){toast(r.msg||'添加失败');return;}document.getElementById('wlInput').value='';toast(v+' 已加入白名单 ✓');loadWhitelist();}
+async function delWl(w){await fetch('/api/whitelist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:w})});loadWhitelist();}
+function pickPreset(p){
+  document.querySelectorAll('.preset').forEach(e=>e.classList.remove('sel'));
+  const el=document.getElementById('preset-'+p);if(el)el.classList.add('sel');
+  document.getElementById('davUrl').value=p==='jianguoyun'?'https://dav.jianguoyun.com/dav/':p==='infinicloud'?'https://higa.teracloud.jp/dav/':'';
+  if(p==='custom'){document.getElementById('davUrl').focus();}
+  davSavePreset(p);
+}
+async function davSavePreset(p){await api('/api/webdav/test',{preset:p,url:document.getElementById('davUrl').value});}
+function davCreds(){return {preset:document.querySelector('.preset.sel')?.id?.replace('preset-','')||'custom',url:document.getElementById('davUrl').value,user:document.getElementById('davUser').value,pass:document.getElementById('davPass').value};}
+async function davTest(){const r=await api('/api/webdav/test',davCreds());document.getElementById('davMsg').textContent=r.msg;toast(r.msg);}
+async function davBackup(){const r=await api('/api/webdav/backup',{});document.getElementById('davMsg').textContent=r.ok?('备份成功 ✓ 文件：'+r.file):r.msg;toast(r.ok?'备份成功 ✓':r.msg);}
+async function davList(){const r=await api('/api/webdav/backups');if(!r.ok){document.getElementById('davMsg').textContent=r.msg;return;}
+  document.getElementById('davBackups').innerHTML=(r.backups||[]).map(b=>'<div class="row"><div class="t">'+b+'</div><button class="btn" style="padding:6px 14px" onclick="davRestore(\''+b+'\')">恢复这个</button></div>').join('')||'<p class="muted">WebDAV 上没有找到备份文件</p>';}
+async function davRestore(n){if(!confirm('恢复会覆盖本机的规则、白名单和设置，确定吗？'))return;const r=await api('/api/webdav/restore',{name:n});document.getElementById('davMsg').textContent=r.msg;toast(r.msg);refreshStatus();}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t||'green');document.querySelectorAll('.dot').forEach(d=>d.classList.toggle('sel',d.dataset.theme===(t||'green')));}
+async function setTheme(t){applyTheme(t);await api('/api/settings',{theme:t});toast('主题已切换 ✓');}
+async function setUpdateInterval(v){await api('/api/settings',{updateInterval:v});toast('更新频率已保存 ✓');refreshStatus();}
+async function setUpdateTime(v){const r=await api('/api/settings',{updateTime:v});if(!r.ok){toast(r.msg||'时间格式不对');document.getElementById('updateTimeInput').value=status.updateTime||'03:00';return;}toast('更新时间已保存 ✓');refreshStatus();}
+async function checkVersion(){
+  const r=await api('/api/version');
+  document.getElementById('verMsg').innerHTML=r.error?r.error:(r.hasUpdate?'发现新版 '+r.latest+'，<a href="'+r.url+'" target="_blank">去下载 →</a>':'已是最新版（'+r.current+'，最新 '+(r.latest||'—')+'）');
+}
+document.getElementById('mainSwitch').onclick=async()=>{
+  const r=await api('/api/toggle',{enabled:!status.enabled});toast(r.enabled?'保护已开启':'保护已关闭');refreshStatus();
+};
+refreshStatus(); window.setInterval(()=>{ if(document.getElementById('page-logs').classList.contains('active')) loadLogs(); },2000);
+window.setInterval(()=>{ if(document.getElementById('page-home').classList.contains('active')||document.getElementById('page-devices').classList.contains('active')) refreshStatus(); },2000);
+</script>
+</body>
+</html>

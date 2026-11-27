@@ -1,0 +1,10 @@
+#!/bin/bash
+# v1.0.1 修复：安装完成时文件已就位，在这里给二进制授权绑 53 端口。
+# 包用户（run-as=package）默认绑不了 1024 以下端口，没有这个 cap，
+# Dj净界一启动就因 DNS 53 + 5353（avahi 已占）全失败而退出，面板 9092 也打不开。
+LOG="${TRIM_DATA_SHARE_PATHS%%:*}/info.log"
+if [ -x "${TRIM_APPDEST}/bin/djingjie" ] && command -v setcap >/dev/null 2>&1; then
+    setcap cap_net_bind_service=+ep "${TRIM_APPDEST}/bin/djingjie" 2>/tmp/setcap_err || echo "$(date '+%Y-%m-%d %H:%M:%S') install_callback setcap 失败 whoami=$(whoami) id=$(id -u): $(cat /tmp/setcap_err 2>/dev/null)" >> "${LOG}" 2>/dev/null
+    echo "$(date '+%Y-%m-%d %H:%M:%S') install_callback whoami=$(whoami) getcap=$(getcap "${TRIM_APPDEST}/bin/djingjie" 2>/dev/null || echo 无)" >> "${LOG}" 2>/dev/null
+fi
+exit 0

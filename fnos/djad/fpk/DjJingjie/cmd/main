@@ -1,0 +1,107 @@
+#!/bin/bash
+# Dj净界启动脚本（仿 DjMihomo cmd/main 结构）
+# DNS 53/5354/15353 + Web 面板 9092，单二进制 djingjie，数据目录 ${TRIM_DATA_SHARE_PATHS%%:*}
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+LOG_FILE="${DATA_DIR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/djingjie.pid"
+BIN="${TRIM_APPDEST}/bin/djingjie"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+start_process() {
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    if [ -f "${DATA_DIR}/disabled" ]; then
+        log_msg "service disabled, skip starting djingjie (enable it in the console)"
+        return 0
+    fi
+
+    log_msg "Starting djingjie ..."
+    mkdir -p "${DATA_DIR}"
+    # v1.0.1：启动时顺手补一次 53 端口授权（以 root 运行时才有效，
+    # 包用户运行时会静默失败，不影响启动；cap 是文件属性，设一次就一直有效）。
+    # v1.0.4：把结果记下来（每次启动一行，方便定位 53 丢权限）。
+    if command -v setcap >/dev/null 2>&1; then
+        if setcap cap_net_bind_service=+ep "${BIN}" 2>/dev/null; then
+            log_msg "启动补 setcap 成功"
+        else
+            log_msg "启动补 setcap 失败（当前用户 $(whoami)，需 root 手动授权一次才能绑 53）"
+        fi
+    fi
+    # OpenWrt/低内存环境可由启动脚本用环境变量调保守值；NAS 默认即可
+    DJINGJIE_DATA="${DATA_DIR}" nohup "${BIN}" >> "${LOG_FILE}" 2>&1 &
+    printf "%s" "$!" > "${PID_FILE}"
+    log_msg "djingjie pid = $!"
+    return 0
+}
+
+stop_process() {
+    log_msg "Stopping djingjie ..."
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            return 0
+        fi
+        kill -TERM "${pid}" >> "${LOG_FILE}" 2>&1
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+        done
+        if check_process "${pid}"; then
+            kill -KILL "${pid}"
+            sleep 1
+        fi
+        rm -f "${PID_FILE}"
+    fi
+    return 0
+}
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
+    fi
+    return 1
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    else
+        exit 3
+    fi
+    ;;
+*)
+    exit 1
+    ;;
+esac

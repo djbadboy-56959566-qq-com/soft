@@ -1,0 +1,31 @@
+#!/bin/bash
+# Dj净界安装初始化：只做有防护的操作，缺文件也不让安装失败。
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+# v1.0.4：记录本脚本以什么身份跑（同 upgrade_init，装机后看日志定位）。
+LOG="${DATA_DIR}/info.log"
+echo "$(date '+%Y-%m-%d %H:%M:%S') install_init 身份 whoami=$(whoami) id=$(id -u)（setcap 只有 root 能成）" >> "${LOG}" 2>/dev/null || true
+# 先停掉残留的旧实例，避免占住 53/5353/9092
+pkill -TERM -f "DjJingjie/bin/[d]jingjie" 2>/dev/null || true
+sleep 2
+pkill -KILL -f "DjJingjie/bin/[d]jingjie" 2>/dev/null || true
+mkdir -p "${DATA_DIR}"
+# 包用户运行：旧版 root 遗留文件归还给应用用户
+if [ "$(id -u)" = "0" ] && [ -n "${TRIM_USERNAME:-}" ]; then
+    chown -R "${TRIM_USERNAME}:${TRIM_USERNAME}" "${DATA_DIR}" 2>/dev/null || true
+fi
+# 默认不禁用（首版默认开启；用户可在面板里关）
+rm -f "${DATA_DIR}/disabled"
+# v1.0.1 修复：包用户默认绑不了 53 端口（permission denied），
+# 升级时 app.tgz 可能还没解到 TRIM_APPDEST，这里有文件就设、没文件也不报错，
+# 真正的授权在 install_callback 里再补一次。
+# v1.0.4：setcap 结果记日志（同 upgrade_init）。
+if [ -x "${TRIM_APPDEST}/bin/djingjie" ] && command -v setcap >/dev/null 2>&1; then
+    if setcap cap_net_bind_service=+ep "${TRIM_APPDEST}/bin/djingjie" 2>/tmp/setcap_err; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') install_init setcap 成功 getcap=$(getcap "${TRIM_APPDEST}/bin/djingjie" 2>/dev/null)" >> "${LOG}" 2>/dev/null || true
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') install_init setcap 失败 whoami=$(whoami)：$(cat /tmp/setcap_err 2>/dev/null)" >> "${LOG}" 2>/dev/null || true
+    fi
+else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') install_init 跳过 setcap：二进制未就位" >> "${LOG}" 2>/dev/null || true
+fi
+exit 0

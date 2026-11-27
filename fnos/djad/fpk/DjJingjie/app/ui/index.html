@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Dj净界</title>
+<link rel="icon" type="image/png" href="images/icon-64.png">
+<script>
+// 飞牛桌面入口：面板由 Dj净界服务在 9092 端口提供，跳过去
+location.replace("http://" + location.hostname + ":9092/");
+</script>
+</head>
+<body>
+<p>正在打开 Dj净界面板……如果没有自动跳转，请访问：<a id="l" href="#">http://NAS-IP:9092/</a></p>
+<script>document.getElementById("l").href = "http://" + location.hostname + ":9092/"; document.getElementById("l").textContent = "http://" + location.hostname + ":9092/";</script>
+</body>
+</html>

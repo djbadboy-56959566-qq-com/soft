@@ -1,0 +1,26 @@
+#!/bin/bash
+# Dj净界升级初始化：与 install_init 同理，绝不删用户数据（规则、白名单、配置、日志都在数据目录里）。
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+# v1.0.4：记录本脚本以什么身份跑（callback 已证实是包用户 DjJingjie，setcap 必失败；
+# init 是不是 root，只能看装机后这行日志，不要猜）。
+LOG="${DATA_DIR}/info.log"
+echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_init 身份 whoami=$(whoami) id=$(id -u)（setcap 只有 root 能成）" >> "${LOG}" 2>/dev/null || true
+pkill -TERM -f "DjJingjie/bin/[d]jingjie" 2>/dev/null || true
+sleep 2
+pkill -KILL -f "DjJingjie/bin/[d]jingjie" 2>/dev/null || true
+mkdir -p "${DATA_DIR}"
+if [ "$(id -u)" = "0" ] && [ -n "${TRIM_USERNAME:-}" ]; then
+    chown -R "${TRIM_USERNAME}:${TRIM_USERNAME}" "${DATA_DIR}" 2>/dev/null || true
+fi
+# v1.0.1 修复：同 install_init，升级时二进制可能还没就位，有就设、没有等 callback 补。
+# v1.0.4：setcap 结果也记日志（若二进制此时未就位，记一行，靠 callback 补）。
+if [ -x "${TRIM_APPDEST}/bin/djingjie" ] && command -v setcap >/dev/null 2>&1; then
+    if setcap cap_net_bind_service=+ep "${TRIM_APPDEST}/bin/djingjie" 2>/tmp/setcap_err; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_init setcap 成功 getcap=$(getcap "${TRIM_APPDEST}/bin/djingjie" 2>/dev/null)" >> "${LOG}" 2>/dev/null || true
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_init setcap 失败 whoami=$(whoami)：$(cat /tmp/setcap_err 2>/dev/null)" >> "${LOG}" 2>/dev/null || true
+    fi
+else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_init 跳过 setcap：二进制未就位" >> "${LOG}" 2>/dev/null || true
+fi
+exit 0

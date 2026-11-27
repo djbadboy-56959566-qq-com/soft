@@ -1,0 +1,9 @@
+#!/bin/bash
+# v1.0.1 修复：同 install_callback，升级后重新授权（新二进制会丢掉旧的 cap）。
+# v1.0.3：把结果写进日志（1.0.2 升级后 getcap 为空，说明某处没生效，需定位哪个阶段是 root）。
+LOG="${TRIM_DATA_SHARE_PATHS%%:*}/info.log"
+if [ -x "${TRIM_APPDEST}/bin/djingjie" ] && command -v setcap >/dev/null 2>&1; then
+    setcap cap_net_bind_service=+ep "${TRIM_APPDEST}/bin/djingjie" 2>/tmp/setcap_err || echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_callback setcap 失败 whoami=$(whoami) id=$(id -u): $(cat /tmp/setcap_err 2>/dev/null)" >> "${LOG}" 2>/dev/null
+    echo "$(date '+%Y-%m-%d %H:%M:%S') upgrade_callback whoami=$(whoami) getcap=$(getcap "${TRIM_APPDEST}/bin/djingjie" 2>/dev/null || echo 无)" >> "${LOG}" 2>/dev/null
+fi
+exit 0

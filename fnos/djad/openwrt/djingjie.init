@@ -1,0 +1,31 @@
+#!/bin/sh /etc/rc.common
+# Dj净界 v1.0.0 - NAS 全屋 DNS 去广告（OpenWrt 版）
+# 启动: /etc/init.d/djingjie start|stop|restart|enable|disable
+# 面板: http://路由器IP:9092 ，DNS: 53（绑不上自动落 5353）
+
+START=99
+STOP=10
+USE_PROCD=1
+
+APP_DIR="/usr/share/djingjie"
+DATA_DIR="/etc/djingjie"
+
+start_service() {
+	# 未启用时不启动（与飞牛版行为一致：存在 disabled 标记即不启动）
+	if [ -f "$DATA_DIR/disabled" ]; then
+		logger -t djingjie "service disabled, skip starting"
+		return 0
+	fi
+	procd_open_instance
+	procd_set_param command "$APP_DIR/bin/djingjie"
+	# 路由器内存比 NAS 小，默认更保守：规则上限 5 万条、DNS 缓存 1000 条
+	procd_set_param env DJINGJIE_DATA="$DATA_DIR" DJINGJIE_RULE_CAP="50000" DJINGJIE_DNS_CACHE="1000"
+	procd_set_param respawn
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+stop_service() {
+	killall djingjie 2>/dev/null || true
+}
