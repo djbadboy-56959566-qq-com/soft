@@ -60,6 +60,13 @@ build_one() {
   chmod 755 "$root/usr/share/djmihomo/bin/djconsole" "$root/usr/share/djmihomo/bin/mihomo" \
             "$root/usr/share/djmihomo/uninstall.sh" "$root/etc/init.d/djmihomo"
 
+  # LuCI 界面 (架构无关, 三个包都带): 经典 Lua controller + 模板,
+  # 兼容所有 OpenWrt LuCI (15.05~24.10/SNAPSHOT, 含 ImmortalWrt)。
+  # 文件在 luci/ 下: controller/djmihomo.lua, view/djmihomo/status.htm
+  mkdir -p "$root/usr/lib/lua/luci/controller" "$root/usr/lib/lua/luci/view/djmihomo"
+  cp luci/controller/djmihomo.lua "$root/usr/lib/lua/luci/controller/djmihomo.lua"
+  cp luci/view/djmihomo/status.htm "$root/usr/lib/lua/luci/view/djmihomo/status.htm"
+
   # post-install: 建数据目录 + 默认 app.json (已有不覆盖), 开机自启 + 启动
   cat > "$root/.post-install" <<'EOF'
 #!/bin/sh
@@ -71,6 +78,9 @@ if [ ! -f "$DATA_DIR/app.json" ]; then
 fi
 [ -x "$INIT" ] && "$INIT" enable
 [ -x "$INIT" ] && "$INIT" start
+# 让 LuCI 立即认出新菜单 (清 dispatcher 缓存, 不用重启 uhttpd)
+rm -f /tmp/luci-indexcache 2>/dev/null
+rm -rf /tmp/luci-modulecache 2>/dev/null
 EOF
   # pre-deinstall: 停服务 + 关自启 (数据 /etc/djmihomo 不在包里, 卸载后保留)
   cat > "$root/.pre-deinstall" <<'EOF'
@@ -81,6 +91,9 @@ APP_DIR="/usr/share/djmihomo"
 [ -x "$INIT" ] && "$INIT" disable >/dev/null 2>&1 || true
 pkill -f "$APP_DIR/bin/djconsole" 2>/dev/null || true
 pkill -f "$APP_DIR/bin/mihomo" 2>/dev/null || true
+# 清 LuCI 缓存, 让菜单项随卸载消失
+rm -f /tmp/luci-indexcache 2>/dev/null
+rm -rf /tmp/luci-modulecache 2>/dev/null
 EOF
   chmod 755 "$root/.post-install" "$root/.pre-deinstall"
 
