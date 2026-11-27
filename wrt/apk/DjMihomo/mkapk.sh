@@ -14,6 +14,8 @@ PKGREL="r0"
 APK_VER="3.0.11-r0"
 APK_URL="https://dl-cdn.alpinelinux.org/alpine/edge/main/x86_64/apk-tools-static-${APK_VER}.apk"
 APK="${APK:-/tmp/apkstatic3/sbin/apk.static}"
+# 签名密钥 (有则签名, 否则打无签名包; 公钥放设备 /etc/apk/keys/ 后可免 --allow-untrusted 安装)
+SIGN_KEY="${SIGN_KEY:-keys/djmihomo-sign.key}"
 
 # 1. 准备 apk-tools v3 (静态二进制, x86_64 宿主)
 if [ ! -x "$APK" ]; then
@@ -83,10 +85,14 @@ EOF
   chmod 755 "$root/.post-install" "$root/.pre-deinstall"
 
   mkdir -p dist
+  # 签名: 有 keys/djmihomo-sign.key 就签名 (公钥放设备 /etc/apk/keys/ 后可免 --allow-untrusted)
+  local sign_args=""
+  [ -f "$SIGN_KEY" ] && sign_args="--sign-key $SIGN_KEY"
   # 注意: -I 用 apk v3 字段名 (name/version/description), 不是 v2 的 pkgname/pkgver/pkgdesc
   "$APK" mkpkg \
     -F "$root" \
     -o "$out" \
+    $sign_args \
     -I "name:djmihomo" \
     -I "version:${VERSION}-${PKGREL}" \
     -I "arch:${arch}" \
