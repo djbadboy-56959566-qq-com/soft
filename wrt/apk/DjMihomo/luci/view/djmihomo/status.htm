@@ -1,0 +1,54 @@
+<%+header%>
+<%
+-- DjMihomo 状态页 (Lua 模板, 兼容所有 LuCI 版本)
+-- 状态取自控制台 API: http://127.0.0.1:9091/api/status (服务端调, 无 CORS 问题)
+-- JSON 用 Lua 模式匹配解析, 不依赖 luci.jsonc 等任何额外库。
+local sys = require "luci.sys"
+local http = require "luci.http"
+local disp = require "luci.dispatcher"
+
+local body = sys.httpget("http://127.0.0.1:9091/api/status") or ""
+local running = body:find('"running"%s*:%s*true') ~= nil
+local appVersion = body:match('"appVersion"%s*:%s*"([^"]+)"') or "-"
+local coreVersion = body:match('"coreVersion"%s*:%s*"([^"]+)"') or "-"
+local pid = body:match('"pid"%s*:%s*(%d+)') or "-"
+local mixedPort = body:match('"mixedPort"%s*:%s*(%d+)') or "7890"
+local controllerPort = body:match('"controllerPort"%s*:%s*(%d+)') or "9090"
+local mode = body:match('"mode"%s*:%s*"([^"]+)"') or "-"
+
+-- 控制台地址: 用访问 LuCI 的主机名/IP, 端口 9091
+local host = http.getenv("HTTP_HOST") or ""
+host = host:match("^[^:]+") or host
+if host == "" then host = sys.hostname() or "192.168.1.1" end
+local console_url = "http://" .. host .. ":9091/"
+
+local base = disp.build_url("admin", "services", "djmihomo")
+%>
+<h2 name="content">DjMihomo</h2>
+<p>Mihomo 控制台。混合端口 <%=mixedPort%>，控制端口 <%=controllerPort%>。</p>
+
+<div class="cbi-section">
+	<h3>服务状态</h3>
+	<table class="table">
+		<tr><td style="width:30%">状态</td><td><% if running then %><strong style="color:green">运行中</strong><% else %><strong style="color:red">已停止</strong><% end %></td></tr>
+		<tr><td>控制台版本</td><td><%=appVersion%></td></tr>
+		<tr><td>核心版本</td><td><%=coreVersion%></td></tr>
+		<tr><td>进程 PID</td><td><%=pid%></td></tr>
+		<tr><td>运行模式</td><td><%=mode%></td></tr>
+		<tr><td>混合端口</td><td><%=mixedPort%></td></tr>
+		<tr><td>控制端口</td><td><%=controllerPort%></td></tr>
+	</table>
+</div>
+
+<div class="cbi-section">
+	<h3>操作</h3>
+	<div class="cbi-section-node">
+		<a class="btn cbi-button cbi-button-apply" href="<%=base%>/start">启动</a>
+		<a class="btn cbi-button cbi-button-reset" href="<%=base%>/stop">停止</a>
+		<a class="btn cbi-button cbi-button-reload" href="<%=base%>/restart">重启</a>
+		<a class="btn cbi-button" href="<%=base%>">刷新状态</a>
+		<a class="btn cbi-button cbi-button-action" href="<%=console_url%>" target="_blank" rel="noopener">打开控制台 (:9091)</a>
+	</div>
+	<p style="margin-top:8px">控制台在新窗口打开，地址 <%=console_url%>。订阅、节点、规则等都在控制台里管理。</p>
+</div>
+<%+footer%>
