@@ -10,6 +10,17 @@ OpenWrt 25.12 / SNAPSHOT (apk-tools 3) 直接装 .apk, 不用解压:
 装完自动建数据目录、开自启并启动服务。控制台: http://路由器IP:9091
 Mihomo 控制器: 9090, 混合端口: 7890
 
+LuCI 界面 (装包后自动出现)
+----------------------------
+装完刷新 LuCI, 在 服务 菜单里会出现 DjMihomo。
+LuCI 页只有三样: 服务状态 (运行/停止、版本、PID、端口)、启动/停止/重启、
+打开控制台 (:9091) 的按钮。订阅、节点、规则都在控制台里管, 不在 LuCI 里改。
+LuCI 用经典 Lua controller + 模板, 兼容所有 OpenWrt LuCI 版本
+(15.05~24.10/SNAPSHOT, 含 ImmortalWrt), 不依赖 menu.d JSON / JS view。
+包已签名 (密钥 djmihomo), 先把公钥放到路由器 /etc/apk/keys/ 后可免
+--allow-untrusted 安装: 公钥在仓库 wrt/apk/DjMihomo/djmihomo.rsa.pub。
+没装公钥时仍用 apk add --allow-untrusted 安装。
+
 架构对照 (apk 的 arch 必须和路由器 /etc/apk/arch 里的一致)
 ------------------------------------------------------------
 - aarch64_cortex-a53 -> arm64, 如诺基亚 XG-040G-MF (airoha/an7583)
